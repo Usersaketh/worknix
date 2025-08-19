@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link } from "react-router-dom";
 import { Briefcase, FileText, Users, Target, CheckCircle, TrendingUp } from "lucide-react";
 import heroImage from "@/assets/hero-ats.jpg";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 const Home = () => {
   const features = [
@@ -73,6 +74,11 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* In-content Ad (responsive) */}
+      <div className="px-4 max-w-7xl mx-auto">
+        <AdSlot slot={import.meta.env.VITE_ADSENSE_SLOT_HOME || "0000000000"} className="my-6" />
+      </div>
 
       {/* Stats Section */}
       <section className="py-16 px-4 bg-card/50 backdrop-blur-sm">

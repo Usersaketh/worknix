@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Search, MapPin, Clock, DollarSign, Building, Filter } from "lucide-react";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 const JobPortal = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,6 +126,9 @@ const JobPortal = () => {
             </div>
           </CardContent>
         </Card>
+
+  {/* In-list Ad */}
+  <AdSlot slot={import.meta.env.VITE_ADSENSE_SLOT_JOBS || "0000000001"} className="mb-8" />
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}

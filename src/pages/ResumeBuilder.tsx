@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Download, Eye, Plus, X, Save } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 
 const ResumeBuilder = () => {
+  const previewRef = useRef<HTMLDivElement | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState(1);
   const [resumeData, setResumeData] = useState({
     personalInfo: {
@@ -72,6 +74,10 @@ const ResumeBuilder = () => {
   ];
 
   const [newSkill, setNewSkill] = useState("");
+  const handlePrint = useReactToPrint({
+    content: () => previewRef.current,
+    documentTitle: `${resumeData.personalInfo.name}-Resume`,
+  });
 
   const addSkill = () => {
     if (newSkill.trim() && !resumeData.skills.includes(newSkill.trim())) {
@@ -355,7 +361,7 @@ const ResumeBuilder = () => {
               </Card>
 
               {/* Resume Preview */}
-              <Card>
+        <Card>
                 <CardHeader>
                   <CardTitle>Preview</CardTitle>
                   <CardDescription>
@@ -363,7 +369,7 @@ const ResumeBuilder = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-white border rounded-lg p-4 text-xs text-black min-h-[400px]">
+          <div ref={previewRef} className="bg-white border rounded-lg p-4 text-xs text-black min-h-[400px]">
                     <div className="text-center mb-4">
                       <h1 className="text-lg font-bold">{resumeData.personalInfo.name}</h1>
                       <div className="text-xs text-gray-600 space-y-1">
@@ -409,7 +415,7 @@ const ResumeBuilder = () => {
                   </div>
                   
                   <div className="flex gap-2 mt-4">
-                    <Button variant="professional" size="sm" className="flex-1">
+                    <Button onClick={handlePrint} variant="professional" size="sm" className="flex-1">
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
                     </Button>

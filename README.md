@@ -60,6 +60,39 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Local development
+
+1. Install deps
+2. Start dev server
+
+```
+npm i
+npm run dev
+```
+
+## Production build
+
+```
+npm run build
+npm run preview
+```
+
+## Environment variables
+
+Copy `.env.example` to `.env` and adjust values:
+
+```
+VITE_ENABLE_ADS=false
+VITE_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
+VITE_ADSENSE_SLOT_HOME=
+VITE_ADSENSE_SLOT_JOBS=
+VITE_ADSENSE_SLOT_GOVT=
+```
+
+When `VITE_ENABLE_ADS=true` and a valid `VITE_ADSENSE_CLIENT_ID` are set, AdSense loads; responsive in-content slots appear on Home, Jobs, and Govt Jobs. Ads are intentionally non-intrusive and do not block core flows.
+
+Policy pages are available at `/about`, `/contact`, `/privacy` and linked from the footer and mobile secondary nav.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/70875917-9e3f-4014-816d-4ada15658a58) and click on Share -> Publish.

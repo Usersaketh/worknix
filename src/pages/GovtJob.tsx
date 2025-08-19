@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Search, MapPin, Clock, DollarSign, Building, Filter, Shield } from "lucide-react";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 const GovtJob = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,6 +133,9 @@ const GovtJob = () => {
             </div>
           </CardContent>
         </Card>
+
+  {/* In-list Ad */}
+  <AdSlot slot={import.meta.env.VITE_ADSENSE_SLOT_GOVT || "0000000002"} className="mb-8" />
 
         <div className="grid lg:grid-cols-4 gap-8">
           {/* Sidebar Filters */}

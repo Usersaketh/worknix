@@ -45,7 +45,7 @@ const Navigation = () => {
             })}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-2">
             <Link to="/signin">
               <Button variant="outline" size="sm">Sign In</Button>
             </Link>
@@ -54,6 +54,12 @@ const Navigation = () => {
             </Link>
           </div>
         </div>
+      </div>
+      {/* Secondary nav row for policy links on small screens */}
+      <div className="md:hidden px-4 pb-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
+        <Link to="/about" className="hover:text-primary">About</Link>
+        <Link to="/contact" className="hover:text-primary">Contact</Link>
+        <Link to="/privacy" className="hover:text-primary">Privacy</Link>
       </div>
     </nav>
   );
