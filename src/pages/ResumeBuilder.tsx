@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Download, Eye, Plus, X, Save } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 const ResumeBuilder = () => {
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -79,6 +83,22 @@ const ResumeBuilder = () => {
     documentTitle: `${resumeData.personalInfo.name}-Resume`,
   });
 
+  // Very small DOCX generation using a data URI with simple HTML; not full DOCX spec, but opens in Word
+  const handleDownloadWord = () => {
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${
+      previewRef.current?.innerHTML || ""
+    }</body></html>`;
+    const blob = new Blob([html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${resumeData.personalInfo.name}-Resume.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const addSkill = () => {
     if (newSkill.trim() && !resumeData.skills.includes(newSkill.trim())) {
       setResumeData({
@@ -94,6 +114,128 @@ const ResumeBuilder = () => {
       ...resumeData,
       skills: resumeData.skills.filter(skill => skill !== skillToRemove)
     });
+  };
+
+  const addExperience = () => {
+    const id = Math.max(0, ...resumeData.experience.map(e => e.id)) + 1;
+    setResumeData({
+      ...resumeData,
+      experience: [
+        ...resumeData.experience,
+        { id, title: "", company: "", location: "", startDate: "", endDate: "", description: "" },
+      ],
+    });
+  };
+  const updateExperience = (id: number, field: string, value: string) => {
+    setResumeData({
+      ...resumeData,
+      experience: resumeData.experience.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
+    });
+  };
+  const removeExperience = (id: number) => {
+    setResumeData({ ...resumeData, experience: resumeData.experience.filter((e) => e.id !== id) });
+  };
+
+  const addEducation = () => {
+    const id = Math.max(0, ...resumeData.education.map(e => e.id)) + 1;
+    setResumeData({
+      ...resumeData,
+      education: [
+        ...resumeData.education,
+        { id, degree: "", school: "", location: "", startDate: "", endDate: "" },
+      ],
+    });
+  };
+  const updateEducation = (id: number, field: string, value: string) => {
+    setResumeData({
+      ...resumeData,
+      education: resumeData.education.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
+    });
+  };
+  const removeEducation = (id: number) => {
+    setResumeData({ ...resumeData, education: resumeData.education.filter((e) => e.id !== id) });
+  };
+
+  // Validation for Personal Info
+  const PersonalInfoSchema = z.object({
+    name: z.string().min(2, "Name is required"),
+    email: z.string().email("Enter a valid email"),
+    phone: z
+      .string()
+      .min(7, "Enter a valid phone")
+      .refine((v) => /[0-9()+\-\s]/.test(v), { message: "Enter a valid phone" }),
+    location: z.string().min(2, "Location is required"),
+    linkedin: z
+      .string()
+      .optional()
+      .transform((v) => v ?? "")
+      .refine((v) => v.length === 0 || /^https?:\/\//i.test(v) || v.includes("linkedin.com/"), {
+        message: "Enter a LinkedIn URL",
+      }),
+    summary: z.string().min(10, "Add a brief professional summary"),
+  });
+
+  type PersonalInfoForm = z.infer<typeof PersonalInfoSchema>;
+  const {
+    register,
+    formState: { errors, isValid },
+    watch,
+    reset,
+  } = useForm<PersonalInfoForm>({
+    resolver: zodResolver(PersonalInfoSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: resumeData.personalInfo.name,
+      email: resumeData.personalInfo.email,
+      phone: resumeData.personalInfo.phone,
+      location: resumeData.personalInfo.location,
+      linkedin: resumeData.personalInfo.linkedin,
+      summary: resumeData.personalInfo.summary,
+    },
+  });
+
+  // Keep preview in sync with form
+  useEffect(() => {
+    const sub = watch((values) => {
+      if (!values) return;
+      setResumeData((prev) => ({
+        ...prev,
+        personalInfo: {
+          name: values.name ?? prev.personalInfo.name,
+          email: values.email ?? prev.personalInfo.email,
+          phone: values.phone ?? prev.personalInfo.phone,
+          location: values.location ?? prev.personalInfo.location,
+          linkedin: values.linkedin ?? prev.personalInfo.linkedin,
+          summary: values.summary ?? prev.personalInfo.summary,
+        },
+      }));
+    });
+    return () => sub.unsubscribe();
+  }, [watch]);
+
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("worknix_resume");
+      if (raw) {
+        const saved = JSON.parse(raw);
+        setResumeData(saved);
+        reset({ ...saved.personalInfo });
+      }
+    } catch (e) {
+      // ignore malformed data but log once for diagnostics
+      console.warn("Failed to load saved resume", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem("worknix_resume", JSON.stringify(resumeData));
+      toast.success("Resume saved locally");
+    } catch {
+      toast.error("Failed to save");
+    }
   };
 
   return (
@@ -123,7 +265,7 @@ const ResumeBuilder = () => {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={handleSave}>
                       <Save className="h-4 w-4 mr-2" />
                       Save
                     </Button>
@@ -147,79 +289,53 @@ const ResumeBuilder = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          value={resumeData.personalInfo.name}
-                          onChange={(e) => setResumeData({
-                            ...resumeData,
-                            personalInfo: { ...resumeData.personalInfo, name: e.target.value }
-                          })}
-                        />
+                        <Input id="name" aria-invalid={!!errors.name} {...register("name")} />
+                        {errors.name && (
+                          <p className="text-xs text-destructive mt-1">{errors.name.message}</p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={resumeData.personalInfo.email}
-                          onChange={(e) => setResumeData({
-                            ...resumeData,
-                            personalInfo: { ...resumeData.personalInfo, email: e.target.value }
-                          })}
-                        />
+                        <Input id="email" type="email" aria-invalid={!!errors.email} {...register("email")} />
+                        {errors.email && (
+                          <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="phone">Phone</Label>
-                        <Input
-                          id="phone"
-                          value={resumeData.personalInfo.phone}
-                          onChange={(e) => setResumeData({
-                            ...resumeData,
-                            personalInfo: { ...resumeData.personalInfo, phone: e.target.value }
-                          })}
-                        />
+                        <Input id="phone" aria-invalid={!!errors.phone} {...register("phone")} />
+                        {errors.phone && (
+                          <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>
+                        )}
                       </div>
                       <div>
                         <Label htmlFor="location">Location</Label>
-                        <Input
-                          id="location"
-                          value={resumeData.personalInfo.location}
-                          onChange={(e) => setResumeData({
-                            ...resumeData,
-                            personalInfo: { ...resumeData.personalInfo, location: e.target.value }
-                          })}
-                        />
+                        <Input id="location" aria-invalid={!!errors.location} {...register("location")} />
+                        {errors.location && (
+                          <p className="text-xs text-destructive mt-1">{errors.location.message}</p>
+                        )}
                       </div>
                     </div>
                     <div>
                       <Label htmlFor="linkedin">LinkedIn Profile</Label>
-                      <Input
-                        id="linkedin"
-                        value={resumeData.personalInfo.linkedin}
-                        onChange={(e) => setResumeData({
-                          ...resumeData,
-                          personalInfo: { ...resumeData.personalInfo, linkedin: e.target.value }
-                        })}
-                      />
+                      <Input id="linkedin" aria-invalid={!!errors.linkedin} {...register("linkedin")} />
+                      {errors.linkedin && (
+                        <p className="text-xs text-destructive mt-1">{errors.linkedin.message as string}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="summary">Professional Summary</Label>
-                      <Textarea
-                        id="summary"
-                        rows={4}
-                        value={resumeData.personalInfo.summary}
-                        onChange={(e) => setResumeData({
-                          ...resumeData,
-                          personalInfo: { ...resumeData.personalInfo, summary: e.target.value }
-                        })}
-                      />
+                      <Textarea id="summary" rows={4} aria-invalid={!!errors.summary} {...register("summary")} />
+                      {errors.summary && (
+                        <p className="text-xs text-destructive mt-1">{errors.summary.message}</p>
+                      )}
                     </div>
                   </TabsContent>
 
                   <TabsContent value="experience" className="space-y-4 mt-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Work Experience</h3>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={addExperience}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Experience
                       </Button>
@@ -230,24 +346,29 @@ const ResumeBuilder = () => {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label>Job Title</Label>
-                              <Input value={exp.title} />
+                              <Input value={exp.title} onChange={(e) => updateExperience(exp.id, "title", e.target.value)} />
                             </div>
                             <div>
                               <Label>Company</Label>
-                              <Input value={exp.company} />
+                              <Input value={exp.company} onChange={(e) => updateExperience(exp.id, "company", e.target.value)} />
                             </div>
                             <div>
                               <Label>Start Date</Label>
-                              <Input value={exp.startDate} />
+                              <Input value={exp.startDate} onChange={(e) => updateExperience(exp.id, "startDate", e.target.value)} />
                             </div>
                             <div>
                               <Label>End Date</Label>
-                              <Input value={exp.endDate} />
+                              <Input value={exp.endDate} onChange={(e) => updateExperience(exp.id, "endDate", e.target.value)} />
                             </div>
                           </div>
                           <div>
                             <Label>Description</Label>
-                            <Textarea rows={3} value={exp.description} />
+                            <Textarea rows={3} value={exp.description} onChange={(e) => updateExperience(exp.id, "description", e.target.value)} />
+                          </div>
+                          <div className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => removeExperience(exp.id)}>
+                              <X className="h-4 w-4 mr-1" /> Remove
+                            </Button>
                           </div>
                         </div>
                       </Card>
@@ -257,7 +378,7 @@ const ResumeBuilder = () => {
                   <TabsContent value="education" className="space-y-4 mt-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Education</h3>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={addEducation}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Education
                       </Button>
@@ -268,20 +389,25 @@ const ResumeBuilder = () => {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label>Degree</Label>
-                              <Input value={edu.degree} />
+                              <Input value={edu.degree} onChange={(e) => updateEducation(edu.id, "degree", e.target.value)} />
                             </div>
                             <div>
                               <Label>School</Label>
-                              <Input value={edu.school} />
+                              <Input value={edu.school} onChange={(e) => updateEducation(edu.id, "school", e.target.value)} />
                             </div>
                             <div>
                               <Label>Start Date</Label>
-                              <Input value={edu.startDate} />
+                              <Input value={edu.startDate} onChange={(e) => updateEducation(edu.id, "startDate", e.target.value)} />
                             </div>
                             <div>
                               <Label>End Date</Label>
-                              <Input value={edu.endDate} />
+                              <Input value={edu.endDate} onChange={(e) => updateEducation(edu.id, "endDate", e.target.value)} />
                             </div>
+                          </div>
+                          <div className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => removeEducation(edu.id)}>
+                              <X className="h-4 w-4 mr-1" /> Remove
+                            </Button>
                           </div>
                         </div>
                       </Card>
@@ -369,7 +495,27 @@ const ResumeBuilder = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-          <div ref={previewRef} className="bg-white border rounded-lg p-4 text-xs text-black min-h-[400px]">
+          <div
+            ref={previewRef}
+            className={`bg-white border rounded-lg p-4 text-xs text-black min-h-[400px] ${
+              selectedTemplate === 1
+                ? "[&_*]:leading-snug"
+                : selectedTemplate === 2
+                ? "border-primary/40"
+                : selectedTemplate === 3
+                ? "shadow-none border-border"
+                : "shadow-[var(--shadow-card)]"
+            }`}
+            style={
+              selectedTemplate === 1
+                ? { fontFamily: 'ui-sans-serif, system-ui', lineHeight: 1.4 }
+                : selectedTemplate === 2
+                ? { fontFamily: 'Georgia, serif' }
+                : selectedTemplate === 3
+                ? { fontFamily: 'Inter, ui-sans-serif' }
+                : undefined
+            }
+          >
                     <div className="text-center mb-4">
                       <h1 className="text-lg font-bold">{resumeData.personalInfo.name}</h1>
                       <div className="text-xs text-gray-600 space-y-1">
@@ -397,7 +543,31 @@ const ResumeBuilder = () => {
                             </div>
                             <div className="text-xs text-gray-600">{exp.startDate} - {exp.endDate}</div>
                           </div>
-                          <p className="text-xs mt-1 leading-relaxed">{exp.description}</p>
+                          <div className="text-xs mt-1 leading-relaxed">
+                            {exp.description
+                              .split(/\r?\n/)
+                              .filter(Boolean)
+                              .map((line, i) => (
+                                <div key={i} className="flex gap-2">
+                                  <span>•</span>
+                                  <span className="flex-1">{line}</span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mb-4">
+                      <h2 className="font-bold text-sm mb-2">EDUCATION</h2>
+                      {resumeData.education.map((edu) => (
+                        <div key={edu.id} className="mb-2">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-xs">{edu.degree}</h3>
+                              <div className="text-xs text-gray-600">{edu.school} | {edu.location}</div>
+                            </div>
+                            <div className="text-xs text-gray-600">{edu.startDate} - {edu.endDate}</div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -415,9 +585,42 @@ const ResumeBuilder = () => {
                   </div>
                   
                   <div className="flex gap-2 mt-4">
-                    <Button onClick={handlePrint} variant="professional" size="sm" className="flex-1">
+                    <Button
+                      onClick={() => {
+                        // basic required check for exp/edu titles
+                        const expOk = resumeData.experience.every((e) => e.title && e.company);
+                        const eduOk = resumeData.education.every((e) => e.degree && e.school);
+                        if (!expOk || !eduOk) {
+                          toast.error("Complete Experience and Education fields before exporting");
+                          return;
+                        }
+                        handlePrint();
+                      }}
+                      disabled={!isValid}
+                      variant="professional"
+                      size="sm"
+                      className="flex-1"
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const expOk = resumeData.experience.every((e) => e.title && e.company);
+                        const eduOk = resumeData.education.every((e) => e.degree && e.school);
+                        if (!expOk || !eduOk) {
+                          toast.error("Complete Experience and Education fields before exporting");
+                          return;
+                        }
+                        handleDownloadWord();
+                      }}
+                      disabled={!isValid}
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Word
                     </Button>
                   </div>
                 </CardContent>

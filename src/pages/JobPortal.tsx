@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,8 @@ import { AdSlot } from "@/components/ads/AdSlot";
 
 const JobPortal = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
 
   const jobs = [
     {
@@ -89,11 +91,79 @@ const JobPortal = () => {
   const jobTypes = ["Full-time", "Part-time", "Contract", "Remote"];
   const locations = ["San Francisco, CA", "New York, NY", "Remote", "Seattle, WA", "Austin, TX", "Los Angeles, CA"];
 
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Initialize from URL once
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const types = (searchParams.get("types") || "").split(",").filter(Boolean);
+    const locs = (searchParams.get("locs") || "").split(",").filter(Boolean);
+    setSearchQuery(q);
+    setSelectedTypes(types.filter((t) => jobTypes.includes(t)));
+    setSelectedLocations(locs.filter((l) => locations.includes(l)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedTypes.length) params.set("types", selectedTypes.join(","));
+    if (selectedLocations.length) params.set("locs", selectedLocations.join(","));
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedTypes, selectedLocations, setSearchParams]);
+
+  const matchesSearch = (text: string) => text.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredJobs = jobs.filter(job => {
+    const searchOk =
+      matchesSearch(job.title) ||
+      matchesSearch(job.company) ||
+      job.skills.some((s) => matchesSearch(s));
+    const typeOk = selectedTypes.length === 0 || selectedTypes.includes(job.type);
+    const locationOk = selectedLocations.length === 0 || selectedLocations.includes(job.location);
+    return searchOk && typeOk && locationOk;
+  });
+  const [sort, setSort] = useState("Most Recent");
+  const sortedJobs = useMemo(() => {
+    const arr = [...filteredJobs];
+    if (sort === "Salary: High to Low") {
+      return arr.sort((a, b) => parseInt(b.salary.replace(/[^0-9]/g, "")) - parseInt(a.salary.replace(/[^0-9]/g, "")));
+    }
+    if (sort === "Salary: Low to High") {
+      return arr.sort((a, b) => parseInt(a.salary.replace(/[^0-9]/g, "")) - parseInt(b.salary.replace(/[^0-9]/g, "")));
+    }
+    // Most Recent or Relevance default (no reliable date parsing here)
+    return arr;
+  }, [filteredJobs, sort]);
+
+  const [shownCount, setShownCount] = useState(6);
+  const visibleJobs = useMemo(() => sortedJobs.slice(0, shownCount), [sortedJobs, shownCount]);
+
+  // Read page from URL
+  useEffect(() => {
+    const p = parseInt(searchParams.get("p") || "1", 10);
+    if (p > 1) setShownCount(p * 6);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist page to URL
+  useEffect(() => {
+    const p = Math.max(1, Math.ceil(shownCount / 6));
+    const params = new URLSearchParams(searchParams);
+    if (p > 1) params.set("p", String(p)); else params.delete("p");
+    setSearchParams(params, { replace: true });
+  }, [shownCount, searchParams, setSearchParams]);
+
+  const toggleIn = (arr: string[], setArr: (v: string[]) => void, value: string) => {
+    setArr(arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]);
+  };
+
+  const removeType = (t: string) => setSelectedTypes((prev) => prev.filter((v) => v !== t));
+  const removeLocation = (l: string) => setSelectedLocations((prev) => prev.filter((v) => v !== l));
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+    setSelectedLocations([]);
+  };
+  const clearSearch = () => setSearchQuery("");
 
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
@@ -124,6 +194,38 @@ const JobPortal = () => {
                 Filters
               </Button>
             </div>
+
+            {(selectedTypes.length > 0 || selectedLocations.length > 0 || searchQuery) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {searchQuery && (
+                  <Badge variant="secondary" className="text-sm">
+                    Search: {searchQuery}
+                    <button className="ml-2" aria-label="Clear search" onClick={clearSearch}>
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {selectedTypes.map((t) => (
+                  <Badge key={`t-${t}`} variant="secondary" className="text-sm">
+                    {t}
+                    <button className="ml-2" aria-label={`Remove ${t}`} onClick={() => removeType(t)}>
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                {selectedLocations.map((l) => (
+                  <Badge key={`l-${l}`} variant="secondary" className="text-sm">
+                    {l}
+                    <button className="ml-2" aria-label={`Remove ${l}`} onClick={() => removeLocation(l)}>
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto">
+                  Clear filters
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -146,7 +248,13 @@ const JobPortal = () => {
                   <div className="space-y-2">
                     {jobTypes.map((type) => (
                       <label key={type} className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedTypes.includes(type)}
+                          onChange={() => toggleIn(selectedTypes, setSelectedTypes, type)}
+                          aria-label={`Filter by job type ${type}`}
+                        />
                         <span className="text-sm">{type}</span>
                       </label>
                     ))}
@@ -160,11 +268,28 @@ const JobPortal = () => {
                   <div className="space-y-2">
                     {locations.map((location) => (
                       <label key={location} className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedLocations.includes(location)}
+                          onChange={() => toggleIn(selectedLocations, setSelectedLocations, location)}
+                          aria-label={`Filter by location ${location}`}
+                        />
                         <span className="text-sm">{location}</span>
                       </label>
                     ))}
                   </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => { setSelectedTypes([]); setSelectedLocations([]); }}
+                    aria-label="Clear all filters"
+                  >
+                    Clear all
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -173,10 +298,13 @@ const JobPortal = () => {
           {/* Job Listings */}
           <div className="lg:col-span-3">
             <div className="mb-4 flex justify-between items-center">
-              <p className="text-muted-foreground">
-                Showing {filteredJobs.length} jobs
-              </p>
-              <select className="border border-border rounded-md px-3 py-2 text-sm">
+              <p className="text-muted-foreground">Showing {sortedJobs.length} jobs</p>
+              <select
+                className="border border-border rounded-md px-3 py-2 text-sm"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                aria-label="Sort jobs"
+              >
                 <option>Most Recent</option>
                 <option>Salary: High to Low</option>
                 <option>Salary: Low to High</option>
@@ -185,7 +313,14 @@ const JobPortal = () => {
             </div>
 
             <div className="space-y-6">
-              {filteredJobs.map((job) => (
+              {sortedJobs.length === 0 ? (
+                <Card className="p-6 text-center text-muted-foreground">
+                  <p className="mb-3">No jobs match your filters.</p>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedTypes([]); setSelectedLocations([]); setSearchQuery(""); }}>
+                    Reset filters
+                  </Button>
+                </Card>
+              ) : visibleJobs.map((job) => (
                 <Card key={job.id} className="group hover:shadow-[var(--shadow-elegant)] transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
@@ -244,11 +379,13 @@ const JobPortal = () => {
             </div>
 
             {/* Load More */}
-            <div className="text-center mt-12">
-              <Button variant="outline" size="lg">
-                Load More Jobs
-              </Button>
-            </div>
+            {shownCount < sortedJobs.length && (
+              <div className="text-center mt-12">
+                <Button variant="outline" size="lg" onClick={() => setShownCount((c) => c + 6)}>
+                  Load More Jobs
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

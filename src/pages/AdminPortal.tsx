@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,18 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 import { 
   Users, 
   Briefcase, 
@@ -33,7 +21,11 @@ import {
 } from "lucide-react";
 
 const AdminPortal = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem("worknix_admin_tab") || "dashboard");
+  useEffect(() => {
+    localStorage.setItem("worknix_admin_tab", activeTab);
+  }, [activeTab]);
+  const AdminDashboardCharts = lazy(() => import("./admin/AdminDashboardCharts"));
 
   // Sample data for charts
   const applicationData = [
@@ -166,6 +158,15 @@ const AdminPortal = () => {
     }
   };
 
+  const [jobStatus, setJobStatus] = useState<string>("All");
+  const filteredAdminJobs = jobs.filter(j => jobStatus === "All" || j.status === jobStatus);
+  const [siteTitle, setSiteTitle] = useState<string>(() => localStorage.getItem("worknix_site_title") || "Worknix");
+  const [enableAds, setEnableAds] = useState<boolean>(() => localStorage.getItem("worknix_enable_ads") === "true");
+  const saveSettings = () => {
+    localStorage.setItem("worknix_site_title", siteTitle);
+    localStorage.setItem("worknix_enable_ads", String(enableAds));
+  };
+
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -274,80 +275,38 @@ const AdminPortal = () => {
               </Card>
             </div>
 
-            {/* Charts */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>Application Trends</CardTitle>
-                  <CardDescription>Monthly application statistics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={applicationData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="applications" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>Application Status</CardTitle>
-                  <CardDescription>Current status distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-4">
-                    {statusData.map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-sm">{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Charts lazy-loaded */}
+            <Suspense fallback={<Card className="shadow-[var(--shadow-card)] p-6 text-center">Loading charts…</Card>}>
+              <AdminDashboardCharts applicationData={applicationData} statusData={statusData} />
+            </Suspense>
           </TabsContent>
 
           {/* Jobs Management Tab */}
           <TabsContent value="jobs" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Job Management</h2>
-              <Button variant="professional">
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
-              </Button>
+              <div className="flex items-center gap-3">
+                <select
+                  className="border border-border rounded-md px-3 py-2 text-sm"
+                  value={jobStatus}
+                  onChange={(e) => setJobStatus(e.target.value)}
+                  aria-label="Filter by status"
+                >
+                  <option>All</option>
+                  <option>Active</option>
+                  <option>Paused</option>
+                </select>
+                <Button variant="professional">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Post New Job
+                </Button>
+              </div>
             </div>
 
             <Card className="shadow-[var(--shadow-card)]">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  {jobs.map((job) => (
+                  {filteredAdminJobs.map((job) => (
                     <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground">{job.title}</h3>
@@ -511,6 +470,30 @@ const AdminPortal = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <h2 className="text-2xl font-bold flex items-center gap-2"><Settings className="h-5 w-5" /> Settings</h2>
+            <Card className="shadow-[var(--shadow-card)] max-w-xl">
+              <CardHeader>
+                <CardTitle>Site Configuration</CardTitle>
+                <CardDescription>Persisted locally for demo</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="site-title">Site Title</Label>
+                  <Input id="site-title" value={siteTitle} onChange={(e) => setSiteTitle(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input id="ads-toggle" type="checkbox" checked={enableAds} onChange={(e) => setEnableAds(e.target.checked)} />
+                  <Label htmlFor="ads-toggle">Enable ads (demo-only)</Label>
+                </div>
+                <div className="pt-2">
+                  <Button variant="professional" onClick={saveSettings}>Save Settings</Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}

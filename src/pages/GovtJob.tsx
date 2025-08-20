@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,9 @@ import { AdSlot } from "@/components/ads/AdSlot";
 
 const GovtJob = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedClearances, setSelectedClearances] = useState<string[]>([]);
 
   const govtJobs = [
     {
@@ -93,14 +96,89 @@ const GovtJob = () => {
   ];
 
   const jobTypes = ["Full-time", "Part-time", "Contract", "Remote"];
-  const departments = ["Department of Defense", "Department of Health & Human Services", "Department of Transportation", "Department of Homeland Security", "Department of Education", "General Services Administration"];
+  const departments = [
+    "Department of Defense",
+    "Department of Health & Human Services",
+    "Department of Transportation",
+    "Department of Homeland Security",
+    "Department of Education",
+    "General Services Administration"
+  ];
   const clearances = ["Public Trust", "Secret", "Top Secret", "None Required"];
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const types = (searchParams.get("types") || "").split(",").filter(Boolean);
+    const depts = (searchParams.get("depts") || "").split(",").filter(Boolean);
+    const cls = (searchParams.get("cls") || "").split(",").filter(Boolean);
+    setSearchQuery(q);
+    setSelectedTypes(types.filter((t) => jobTypes.includes(t)));
+    setSelectedDepartments(depts.filter((d) => departments.includes(d)));
+    setSelectedClearances(cls.filter((c) => clearances.includes(c)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const filteredJobs = govtJobs.filter(job => 
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedTypes.length) params.set("types", selectedTypes.join(","));
+    if (selectedDepartments.length) params.set("depts", selectedDepartments.join(","));
+    if (selectedClearances.length) params.set("cls", selectedClearances.join(","));
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedTypes, selectedDepartments, selectedClearances, setSearchParams]);
+
+  const matchesSearch = (t: string) => t.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredJobs = govtJobs.filter((job) => {
+    const searchOk =
+      matchesSearch(job.title) ||
+      matchesSearch(job.department) ||
+      job.skills.some((s) => matchesSearch(s));
+    const typeOk = selectedTypes.length === 0 || selectedTypes.includes(job.type);
+    const deptOk = selectedDepartments.length === 0 || selectedDepartments.includes(job.department);
+    const clearOk =
+      selectedClearances.length === 0 ||
+      selectedClearances.includes(job.clearance || "None Required");
+    return searchOk && typeOk && deptOk && clearOk;
+  });
+
+  const toggleIn = (arr: string[], setArr: (v: string[]) => void, value: string) => {
+    setArr(arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]);
+  };
+
+  const removeType = (t: string) => setSelectedTypes((prev) => prev.filter((v) => v !== t));
+  const removeDept = (d: string) => setSelectedDepartments((prev) => prev.filter((v) => v !== d));
+  const removeClearance = (c: string) => setSelectedClearances((prev) => prev.filter((v) => v !== c));
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+    setSelectedDepartments([]);
+    setSelectedClearances([]);
+  };
+  const clearSearch = () => setSearchQuery("");
+
+  const [sort, setSort] = useState("Most Recent");
+  const sortedJobs = useMemo(() => {
+    const arr = [...filteredJobs];
+    if (sort === "Salary: High to Low") {
+      return arr.sort((a, b) => parseInt((b.salary || "0").replace(/[^0-9]/g, "")) - parseInt((a.salary || "0").replace(/[^0-9]/g, "")));
+    }
+    if (sort === "Salary: Low to High") {
+      return arr.sort((a, b) => parseInt((a.salary || "0").replace(/[^0-9]/g, "")) - parseInt((b.salary || "0").replace(/[^0-9]/g, "")));
+    }
+    return arr;
+  }, [filteredJobs, sort]);
+  const [shownCount, setShownCount] = useState(6);
+  const visibleJobs = useMemo(() => sortedJobs.slice(0, shownCount), [sortedJobs, shownCount]);
+  useEffect(() => {
+    const p = parseInt(searchParams.get("p") || "1", 10);
+    if (p > 1) setShownCount(p * 6);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const p = Math.max(1, Math.ceil(shownCount / 6));
+    const params = new URLSearchParams(searchParams);
+    if (p > 1) params.set("p", String(p)); else params.delete("p");
+    setSearchParams(params, { replace: true });
+  }, [shownCount, searchParams, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
@@ -131,6 +209,46 @@ const GovtJob = () => {
                 Filters
               </Button>
             </div>
+
+            {(selectedTypes.length > 0 || selectedDepartments.length > 0 || selectedClearances.length > 0 || searchQuery) && (
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {searchQuery && (
+                  <Badge variant="secondary" className="text-sm">
+                    Search: {searchQuery}
+                    <button className="ml-2" aria-label="Clear search" onClick={clearSearch}>
+                      ×
+                    </button>
+                  </Badge>
+                )}
+                {selectedTypes.map((t) => (
+                  <Badge key={`t-${t}`} variant="secondary" className="text-sm">
+                    {t}
+                    <button className="ml-2" aria-label={`Remove ${t}`} onClick={() => removeType(t)}>
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                {selectedDepartments.map((d) => (
+                  <Badge key={`d-${d}`} variant="secondary" className="text-sm">
+                    {d}
+                    <button className="ml-2" aria-label={`Remove ${d}`} onClick={() => removeDept(d)}>
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                {selectedClearances.map((c) => (
+                  <Badge key={`c-${c}`} variant="secondary" className="text-sm">
+                    {c}
+                    <button className="ml-2" aria-label={`Remove ${c}`} onClick={() => removeClearance(c)}>
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto">
+                  Clear filters
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -153,7 +271,13 @@ const GovtJob = () => {
                   <div className="space-y-2">
                     {jobTypes.map((type) => (
                       <label key={type} className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedTypes.includes(type)}
+                          onChange={() => toggleIn(selectedTypes, setSelectedTypes, type)}
+                          aria-label={`Filter by job type ${type}`}
+                        />
                         <span className="text-sm">{type}</span>
                       </label>
                     ))}
@@ -167,7 +291,13 @@ const GovtJob = () => {
                   <div className="space-y-2">
                     {departments.map((dept) => (
                       <label key={dept} className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedDepartments.includes(dept)}
+                          onChange={() => toggleIn(selectedDepartments, setSelectedDepartments, dept)}
+                          aria-label={`Filter by department ${dept}`}
+                        />
                         <span className="text-sm">{dept}</span>
                       </label>
                     ))}
@@ -181,11 +311,28 @@ const GovtJob = () => {
                   <div className="space-y-2">
                     {clearances.map((clearance) => (
                       <label key={clearance} className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" className="rounded" />
+                        <input
+                          type="checkbox"
+                          className="rounded"
+                          checked={selectedClearances.includes(clearance)}
+                          onChange={() => toggleIn(selectedClearances, setSelectedClearances, clearance)}
+                          aria-label={`Filter by clearance ${clearance}`}
+                        />
                         <span className="text-sm">{clearance}</span>
                       </label>
                     ))}
                   </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => { setSelectedTypes([]); setSelectedDepartments([]); setSelectedClearances([]); }}
+                    aria-label="Clear all filters"
+                  >
+                    Clear all
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -194,10 +341,13 @@ const GovtJob = () => {
           {/* Job Listings */}
           <div className="lg:col-span-3">
             <div className="mb-4 flex justify-between items-center">
-              <p className="text-muted-foreground">
-                Showing {filteredJobs.length} government jobs
-              </p>
-              <select className="border border-border rounded-md px-3 py-2 text-sm">
+              <p className="text-muted-foreground">Showing {sortedJobs.length} government jobs</p>
+              <select
+                className="border border-border rounded-md px-3 py-2 text-sm"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                aria-label="Sort jobs"
+              >
                 <option>Most Recent</option>
                 <option>Salary: High to Low</option>
                 <option>Salary: Low to High</option>
@@ -206,7 +356,14 @@ const GovtJob = () => {
             </div>
 
             <div className="space-y-6">
-              {filteredJobs.map((job) => (
+              {sortedJobs.length === 0 ? (
+                <Card className="p-6 text-center text-muted-foreground">
+                  <p className="mb-3">No government jobs match your filters.</p>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedTypes([]); setSelectedDepartments([]); setSelectedClearances([]); setSearchQuery(""); }}>
+                    Reset filters
+                  </Button>
+                </Card>
+              ) : visibleJobs.map((job) => (
                 <Card key={job.id} className="group hover:shadow-[var(--shadow-elegant)] transition-all duration-300 hover:-translate-y-1 cursor-pointer">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
@@ -271,11 +428,13 @@ const GovtJob = () => {
             </div>
 
             {/* Load More */}
-            <div className="text-center mt-12">
-              <Button variant="outline" size="lg">
-                Load More Government Jobs
-              </Button>
-            </div>
+            {shownCount < sortedJobs.length && (
+              <div className="text-center mt-12">
+                <Button variant="outline" size="lg" onClick={() => setShownCount((c) => c + 6)}>
+                  Load More Government Jobs
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

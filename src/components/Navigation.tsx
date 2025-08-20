@@ -9,7 +9,7 @@ const Navigation = () => {
   const navItems = [
     { path: "/", label: "Home", icon: Home },
     { path: "/jobs", label: "Jobs", icon: Briefcase },
-    { path: "/govt-jobs", label: "Govt Job", icon: Building2 },
+    { path: "/govt-jobs", label: "Govt Jobs", icon: Building2 },
     { path: "/resume-builder", label: "Resume Builder", icon: FileText },
     { path: "/admin", label: "Admin", icon: Shield },
   ];
@@ -31,7 +31,7 @@ const Navigation = () => {
               const isActive = currentPath === item.path;
               
               return (
-                <Link key={item.path} to={item.path}>
+                <Link key={item.path} to={item.path} aria-current={isActive ? "page" : undefined}>
                   <Button
                     variant={isActive ? "default" : "ghost"}
                     size="sm"
