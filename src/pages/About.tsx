@@ -6,7 +6,7 @@ const About = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">About Worknix</h1>
-          <p className="text-muted-foreground text-lg">Professional resume builder and job discovery portal.</p>
+          <p className="text-muted-foreground text-lg">Focused job notifications portal for private and government opportunities.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -16,7 +16,7 @@ const About = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                We help candidates create ATS-optimized resumes and connect with meaningful opportunities, including government roles, using a fast and accessible frontend experience.
+                We surface timely private sector and government openings in a fast, accessible, frontend‑only experience—no accounts or tracking.
               </p>
             </CardContent>
           </Card>
@@ -27,10 +27,10 @@ const About = () => {
             </CardHeader>
             <CardContent>
               <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                <li>Modern resume builder with professional templates</li>
-                <li>Curated job listings with client-side search and filters</li>
-                <li>Government job highlights with clarity on clearance needs</li>
-                <li>Admin dashboard for content oversight (demo)</li>
+                <li>Curated private job postings</li>
+                <li>Highlighted government roles</li>
+                <li>Featured tagging for priority listings</li>
+                <li>Lightweight admin posting (key-protected)</li>
               </ul>
             </CardContent>
           </Card>

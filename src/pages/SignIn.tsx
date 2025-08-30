@@ -7,17 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { 
-  LogIn, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  CheckCircle,
-  AlertCircle,
-  Github,
-  Chrome
-} from "lucide-react";
+import { LogIn, Eye, EyeOff, CheckCircle, AlertCircle, Github, Chrome } from "lucide-react";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -70,7 +60,7 @@ const SignIn = () => {
       
       // Success - redirect to dashboard or home
       navigate("/");
-    } catch (error) {
+  } catch {
       setErrors({ general: "Invalid email or password. Please try again." });
     } finally {
       setIsLoading(false);

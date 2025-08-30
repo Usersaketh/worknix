@@ -1,21 +1,20 @@
 import * as React from "react"
 
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
+import { ToastAction } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+// Shorter default removal; individual toasts can be persistent via action.
+const TOAST_REMOVE_DELAY = 6000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = Omit<ToastProps, 'action'> & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: ToastActionElement
+  action?: React.ReactNode
 }
 
-const actionTypes = {
+const _actionTypes = {
   ADD_TOAST: "ADD_TOAST",
   UPDATE_TOAST: "UPDATE_TOAST",
   DISMISS_TOAST: "DISMISS_TOAST",
@@ -29,7 +28,7 @@ function genId() {
   return count.toString()
 }
 
-type ActionType = typeof actionTypes
+type ActionType = typeof _actionTypes
 
 type Action =
   | {
@@ -142,6 +141,29 @@ type Toast = Omit<ToasterToast, "id">
 function toast({ ...props }: Toast) {
   const id = genId()
 
+  // Mobile UX optimization: suppress non-critical (non-destructive) toasts on small screens
+  // to reduce visual jank, while still allowing error/destructive feedback.
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+  if (isMobile && props.variant !== 'destructive') {
+    return {
+      id,
+      dismiss: () => void 0,
+      update: () => void 0,
+    }
+  }
+
+  // For destructive toasts on mobile, append an explicit Dismiss action for easier touch target.
+  const finalProps: Toast = {
+    ...props,
+    action: isMobile && props.variant === 'destructive'
+      ? React.createElement(
+          ToastAction as any,
+          { altText: 'Dismiss', onClick: () => dispatch({ type: 'DISMISS_TOAST', toastId: id }) },
+          'Dismiss'
+        )
+      : props.action,
+  }
+
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
@@ -152,7 +174,7 @@ function toast({ ...props }: Toast) {
   dispatch({
     type: "ADD_TOAST",
     toast: {
-      ...props,
+      ...finalProps,
       id,
       open: true,
       onOpenChange: (open) => {

@@ -1,8 +1,8 @@
-import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { ReactNode, useEffect, useState } from "react";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentUser } from "@/auth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,12 +14,13 @@ const ProtectedRoute = ({ children, isHost = false }: ProtectedRouteProps) => {
   // For now, we'll simulate host access with a simple check
   // You can replace this with actual authentication logic
   
-  // For demo purposes, let's check if the user is accessing from localhost or has admin privileges
-  const isLocalhost = window.location.hostname === 'localhost' || 
-                     window.location.hostname === '127.0.0.1' ||
-                     window.location.hostname === '';
-  
-  const hasAdminAccess = isHost && isLocalhost;
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  useEffect(()=> { (async () => { const u = await getCurrentUser(); setIsAdmin(u?.role === 'admin'); })(); }, []);
+
+  if (isAdmin === null) {
+    return <div className="p-8 text-center text-sm text-muted-foreground">Checking access…</div>;
+  }
+  const hasAdminAccess = isHost ? isAdmin : true;
 
   if (!hasAdminAccess) {
     return (
@@ -42,7 +43,7 @@ const ProtectedRoute = ({ children, isHost = false }: ProtectedRouteProps) => {
               </p>
               <div className="flex items-center justify-center gap-2 text-sm">
                 <Shield className="h-4 w-4" />
-                <span>Admin access required</span>
+                <span>Admin access required (provide ?key= or use localhost)</span>
               </div>
             </div>
             <div className="flex gap-2">

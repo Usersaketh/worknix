@@ -6,17 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  Building2, 
-  Briefcase,
-  CheckCircle,
-  AlertCircle
-} from "lucide-react";
+import { User, Eye, EyeOff, Building2, Briefcase, CheckCircle, AlertCircle } from "lucide-react";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -96,7 +86,7 @@ const SignUp = () => {
       
       // Success - redirect to dashboard or home
       navigate("/");
-    } catch (error) {
+  } catch {
       setErrors({ general: "Something went wrong. Please try again." });
     } finally {
       setIsLoading(false);

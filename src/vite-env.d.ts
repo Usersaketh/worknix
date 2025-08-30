@@ -6,6 +6,8 @@ interface ImportMetaEnv {
 	readonly VITE_ADSENSE_SLOT_HOME?: string;
 	readonly VITE_ADSENSE_SLOT_JOBS?: string;
 	readonly VITE_ADSENSE_SLOT_GOVT?: string;
+	readonly VITE_NOTIFICATIONS_URL?: string;
+	readonly VITE_ADMIN_KEY?: string;
 }
 
 interface ImportMeta {
