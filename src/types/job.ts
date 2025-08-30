@@ -11,4 +11,5 @@ export interface Job {
   postedAt: string; // ISO timestamp
   imageUrl?: string; // optional company logo/banner
   salary?: string; // optional salary/package text
+  pdfUrl?: string; // optional job PDF attachment
 }

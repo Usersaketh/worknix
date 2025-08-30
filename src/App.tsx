@@ -16,6 +16,7 @@ const JobDetail = lazy(() => import("./pages/JobDetail"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const News = lazy(() => import("./pages/News"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/news" element={<News />} />
               <Route path="/admin" element={<AdminGate><AdminPortal /></AdminGate>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

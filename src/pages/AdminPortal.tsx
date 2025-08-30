@@ -28,10 +28,10 @@ const AdminPortal = () => {
   };
   useEffect(()=> { refresh(); }, []);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Omit<Job,'postedAt'|'id'>>({ title:'', org:'', location:'', kind:'private', description:'', applyUrl:'', deadline:'', featured:false, imageUrl:'', salary:'' });
+  const [editForm, setEditForm] = useState<Omit<Job,'postedAt'|'id'>>({ title:'', org:'', location:'', kind:'private', description:'', applyUrl:'', deadline:'', featured:false, imageUrl:'', salary:'', pdfUrl:'' });
 
   // Form state
-  const empty: Omit<Job,'id'|'postedAt'> = { title: '', org: '', location:'', kind: 'private', description: '', applyUrl: '', deadline: '', featured: false, imageUrl:'', salary:'' };
+  const empty: Omit<Job,'id'|'postedAt'> = { title: '', org: '', location:'', kind: 'private', description: '', applyUrl: '', deadline: '', featured: false, imageUrl:'', salary:'', pdfUrl:'' };
   const [form, setForm] = useState<Omit<Job,'id'|'postedAt'>>(empty);
   const [error, setError] = useState<string | null>(null);
   const validate = (data: {title:string; org:string; applyUrl:string; deadline?: string; imageUrl?: string; salary?: string}) => {
@@ -56,7 +56,7 @@ const AdminPortal = () => {
   };
   const startEdit = (job: Job) => {
     setEditingId(job.id);
-  setEditForm({ title: job.title, org: job.org, location: job.location, kind: job.kind, description: job.description, applyUrl: job.applyUrl, deadline: job.deadline || '', featured: job.featured || false, imageUrl: job.imageUrl || '', salary: job.salary || '' });
+  setEditForm({ title: job.title, org: job.org, location: job.location, kind: job.kind, description: job.description, applyUrl: job.applyUrl, deadline: job.deadline || '', featured: job.featured || false, imageUrl: job.imageUrl || '', salary: job.salary || '', pdfUrl: job.pdfUrl || '' });
   };
   const cancelEdit = () => { setEditingId(null); };
   const saveEdit = async (id: string) => {
@@ -143,6 +143,10 @@ const AdminPortal = () => {
                   <div>
                     <Label htmlFor="salary">Salary / Package</Label>
                     <Input id="salary" value={form.salary} onChange={e=>setForm(f=>({...f,salary:e.target.value}))} placeholder="$100k - $120k" />
+                  </div>
+                  <div>
+                    <Label htmlFor="pdfUrl">Job PDF URL</Label>
+                    <Input id="pdfUrl" value={(form as any).pdfUrl || ''} onChange={e=>setForm(f=>({...f, pdfUrl: e.target.value}))} placeholder="https://.../job.pdf" />
                   </div>
                   <div>
                     <Label htmlFor="kind">Type</Label>
@@ -232,6 +236,10 @@ const AdminPortal = () => {
                           <div>
                             <Label className="text-xs">Salary</Label>
                             <Input value={editForm.salary} onChange={e=>setEditForm(f=>({...f,salary:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Job PDF URL</Label>
+                            <Input value={(editForm as any).pdfUrl || ''} onChange={e=>setEditForm(f=>({...f,pdfUrl:e.target.value}))} />
                           </div>
                           <div>
                             <Label className="text-xs">Type</Label>

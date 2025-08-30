@@ -56,6 +56,7 @@ export default function JobDetail() {
             </div>
             <div className="flex flex-wrap gap-3">
               <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"><Button variant="professional">Apply Now</Button></a>
+              {job.pdfUrl && <a href={job.pdfUrl} target="_blank" rel="noopener noreferrer"><Button variant="outline">Download PDF</Button></a>}
               <Link to={job.kind === 'govt' ? '/jobs/govt' : '/jobs/private'}><Button variant="outline">Back to list</Button></Link>
             </div>
           </CardHeader>

@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, Home, Briefcase, Building2, Menu, X } from "lucide-react";
 import Notifications from "./Notifications";
+import { ThemeToggle } from './ThemeToggle';
 import { useState } from "react";
 
 const Navigation = () => {
@@ -12,6 +13,7 @@ const Navigation = () => {
     { path: "/", label: "Home", icon: Home },
     { path: "/jobs/private", label: "Private Jobs", icon: Briefcase },
     { path: "/jobs/govt", label: "Govt Jobs", icon: Building2 },
+  { path: "/news", label: "News", icon: Shield },
   ];
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -57,6 +59,7 @@ const Navigation = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
+            <ThemeToggle />
             <Notifications />
           </div>
         </div>
@@ -73,7 +76,8 @@ const Navigation = () => {
               </Link>
             );
           })}
-          <div className="pt-2 border-t mt-2">
+          <div className="pt-2 border-t mt-2 space-y-2">
+            <ThemeToggle />
             <Notifications asNavItem />
           </div>
         </div>

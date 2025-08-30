@@ -24,6 +24,7 @@ interface JobRow {
   posted_at: string;
   image_url: string | null;
   salary: string | null;
+  pdf_url: string | null;
 }
 
 // Map DB row -> Job (camelCase plus date normalization to YYYY-MM-DD for deadline)
@@ -41,6 +42,7 @@ function mapRow(row: JobRow): Job {
     postedAt: row.posted_at,
   imageUrl: row.image_url || undefined,
   salary: row.salary || undefined,
+  pdfUrl: row.pdf_url || undefined,
   };
 }
 
@@ -82,6 +84,7 @@ export async function addJob(job: Omit<Job, 'id' | 'postedAt'>): Promise<Job> {
     featured: job.featured ?? false,
   image_url: job.imageUrl || null,
   salary: job.salary || null,
+  pdf_url: (job as any).pdfUrl || null,
   };
   const { data, error } = await supabase.from('jobs').insert(payload).select('*').single();
   throwIfError(error);
@@ -101,6 +104,7 @@ export async function updateJob(id: string, patch: Partial<Job>): Promise<Job> {
   if (patch.featured !== undefined) updatePayload.featured = patch.featured;
   if (patch.imageUrl !== undefined) (updatePayload as Partial<JobRow>).image_url = patch.imageUrl || null;
   if (patch.salary !== undefined) (updatePayload as Partial<JobRow>).salary = patch.salary || null;
+  if ((patch as any).pdfUrl !== undefined) (updatePayload as Partial<JobRow>).pdf_url = (patch as any).pdfUrl || null;
   const { data, error } = await supabase.from('jobs').update(updatePayload).eq('id', id).select('*').single();
   throwIfError(error);
   return mapRow(data);
