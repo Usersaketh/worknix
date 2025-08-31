@@ -11,7 +11,20 @@ export const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        professional: "bg-gradient-to-r from-primary to-primary-dark text-primary-foreground hover:shadow-[var(--shadow-button)] transform hover:-translate-y-0.5 font-semibold",
+        // Professional (primary CTA) — unified solid brand blue in light & dark (no gradient)
+        professional: [
+          // Base colors (light uses design tokens; dark overrides to keep blue rather than white var(--primary))
+          "font-semibold shadow-sm",
+          "bg-[hsl(var(--primary))] text-primary-foreground",
+          "dark:bg-[hsl(217,91%,60%)] dark:text-white",
+          // Hover / active / focus states
+          "hover:bg-[hsl(var(--primary-dark))] dark:hover:bg-[hsl(217,91%,50%)]",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          // Motion + subtle lift
+            "transition-transform hover:-translate-y-0.5 active:translate-y-0",
+          // Shadow accent on hover
+          "hover:shadow-[var(--shadow-button)]",
+        ].join(' '),
         success: "bg-success text-success-foreground hover:bg-success/90 hover:shadow-[var(--shadow-button)]",
         warning: "bg-warning text-warning-foreground hover:bg-warning/90",
       },

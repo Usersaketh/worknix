@@ -46,10 +46,13 @@ function mapRow(row: JobRow): Job {
   };
 }
 
-// Shared error helper to normalize Supabase errors
 function throwIfError(error: unknown): asserts error is null | undefined {
   if (error) {
-  const msg = (error as { message?: string })?.message || 'Supabase query failed';
+    
+    console.error('[jobs:data] Supabase error', error);
+    const errObj = error as { message?: string; code?: string; details?: string; hint?: string };
+    const parts = [errObj.message, errObj.code, errObj.details, errObj.hint].filter(Boolean);
+    const msg = parts.join(' | ') || 'Supabase query failed';
     throw new Error(msg);
   }
 }
@@ -60,7 +63,7 @@ export async function getJobs(kind?: 'private' | 'govt'): Promise<Job[]> {
   if (kind) query = query.eq('kind', kind);
   const { data, error } = await query;
   throwIfError(error);
-  return (data || []).map(mapRow);
+  return (data || []).map(mapRow);      
 }
 
 // 2. getJob(id)
@@ -73,19 +76,22 @@ export async function getJob(id: string): Promise<Job | null> {
 
 // 3. addJob(job)
 export async function addJob(job: Omit<Job, 'id' | 'postedAt'>): Promise<Job> {
-  const payload = {
+  const payload: Record<string, unknown> = {
     title: job.title,
     org: job.org,
-  location: job.location,
+    location: job.location,
     kind: job.kind,
     description: job.description,
     apply_url: job.applyUrl,
     deadline: job.deadline ? job.deadline : null,
     featured: job.featured ?? false,
-  image_url: job.imageUrl || null,
-  salary: job.salary || null,
-  pdf_url: (job as any).pdfUrl || null,
+    image_url: job.imageUrl || null,
+    salary: job.salary || null,
   };
+  const maybePdf = (job as unknown as { pdfUrl?: string }).pdfUrl;
+  if (maybePdf !== undefined && maybePdf !== '') {
+    payload.pdf_url = maybePdf;
+  }
   const { data, error } = await supabase.from('jobs').insert(payload).select('*').single();
   throwIfError(error);
   return mapRow(data);
@@ -104,7 +110,8 @@ export async function updateJob(id: string, patch: Partial<Job>): Promise<Job> {
   if (patch.featured !== undefined) updatePayload.featured = patch.featured;
   if (patch.imageUrl !== undefined) (updatePayload as Partial<JobRow>).image_url = patch.imageUrl || null;
   if (patch.salary !== undefined) (updatePayload as Partial<JobRow>).salary = patch.salary || null;
-  if ((patch as any).pdfUrl !== undefined) (updatePayload as Partial<JobRow>).pdf_url = (patch as any).pdfUrl || null;
+  const patchPdf = (patch as unknown as { pdfUrl?: string }).pdfUrl;
+  if (patchPdf !== undefined) (updatePayload as Partial<JobRow>).pdf_url = patchPdf || null;
   const { data, error } = await supabase.from('jobs').update(updatePayload).eq('id', id).select('*').single();
   throwIfError(error);
   return mapRow(data);

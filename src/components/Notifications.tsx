@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { getNotifications, subscribeNotifications, Notification } from "@/data/notifications";
 
@@ -35,7 +35,8 @@ function relativeTime(iso: string): string {
 export default function Notifications({ asNavItem = false }: { asNavItem?: boolean }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [nowTick, setNowTick] = useState(Date.now()); // forces relative time recalculation
+  // Force relative time recalculation every 60s using a simple tick.
+  const [_tick, setTick] = useState(0);
   const queryClient = useQueryClient();
   const { data, isLoading, isError, error } = useQuery<Notification[]>({
     queryKey: ["notifications"],
@@ -70,14 +71,11 @@ export default function Notifications({ asNavItem = false }: { asNavItem?: boole
 
   // Recompute relative times every 60s
   useEffect(() => {
-    const t = setInterval(() => setNowTick(Date.now()), 60_000);
+  const t = setInterval(() => setTick(ti => ti + 1), 60_000);
     return () => clearInterval(t);
   }, []);
 
-  const decorated = useMemo(() => (data || []).map(n => ({
-    ...n,
-    rel: relativeTime(n.createdAt)
-  })), [data, nowTick]);
+  const decorated = (data || []).map(n => ({ ...n, rel: relativeTime(n.createdAt) }));
 
   const count = decorated.length;
 

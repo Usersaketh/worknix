@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import Seo from '@/components/Seo';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -50,6 +51,7 @@ export default function JobsPrivate() {
 
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
+      <Seo title="Private Jobs" description="Browse curated private sector job opportunities updated frequently." />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className="mb-8 shadow-[var(--shadow-card)]">
           <CardHeader>

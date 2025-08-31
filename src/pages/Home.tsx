@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
+import Seo from '@/components/Seo';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Briefcase, Building2, Star, Search } from "lucide-react";
 import heroImage from "@/assets/hero-ats.jpg";
 import { AdSlot } from "@/components/ads/AdSlot";
@@ -56,7 +57,8 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/30">
-      {/* Hero Section */}
+  <Seo title="Home" description="Curated private & government job opportunities. Search and apply instantly." />
+  {/* Hero Section */}
       <section className="pt-20 pb-16 px-4 relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -108,6 +110,8 @@ const Home = () => {
                   src={heroImage}
                   alt="Professional ATS workspace with diverse team reviewing resumes and conducting interviews"
                   className="w-full h-auto rounded-xl "
+                  loading="eager"
+                  decoding="async"
                 />
               </div>
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-primary to-primary-dark rounded-full opacity-20 blur-xl"></div>
@@ -124,7 +128,7 @@ const Home = () => {
 
 
       {/* Featured Jobs Section */}
-      <section id="featured-jobs" className="py-16 px-4">
+  <section id="featured-jobs" className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8 flex-col md:flex-row gap-6">
             <div>
@@ -134,7 +138,7 @@ const Home = () => {
                 </span>
                 Featured Roles
               </h2>
-              <p className="text-muted-foreground max-w-xl">Highlighted opportunities hand-picked for visibility. Recently posted & actively hiring.</p>
+      <p className="text-muted-foreground max-w-xl">Highlighted opportunities hand-picked for visibility. Recently posted & actively hiring. Updated <span className="font-medium">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>.</p>
             </div>
           </div>
           {loading && (
@@ -145,7 +149,8 @@ const Home = () => {
                     <CardTitle className="h-5 bg-muted rounded w-2/3" />
                     <CardDescription className="h-4 bg-muted rounded w-1/2" />
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent 
+                  className="space-y-3">
                     <div className="h-3 bg-muted rounded w-full" />
                     <div className="h-3 bg-muted rounded w-5/6" />
                     <div className="h-9 bg-muted rounded" />
@@ -183,7 +188,7 @@ const Home = () => {
                 </span>
                 Private Sector Jobs
               </h2>
-              <p className="text-muted-foreground max-w-xl">Latest hand-curated roles across engineering, product, design, marketing and more.</p>
+              <p className="text-muted-foreground max-w-xl">Latest hand-curated roles across engineering, product, design, marketing and more. We review postings for clarity and remove stale listings. Updated <span className="font-medium">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>.</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => window.location.hash = "private-jobs"}>View All</Button>
           </div>
@@ -202,7 +207,8 @@ const Home = () => {
                 </span>
                 Government Jobs
               </h2>
-              <p className="text-muted-foreground max-w-xl">Highlighted open roles from select public sector departments & agencies.</p>
+              <p className="text-muted-foreground max-w-xl">Highlighted open roles from select public sector departments & agencies. We strive for accuracy but always verify via the official notification. Updated <span className="font-medium">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>.</p>
+              <p className="text-xs text-muted-foreground mt-2">Disclaimer: Government job details are summarized; refer to the official publication for authoritative information.</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => window.location.hash = "govt-jobs"}>View All</Button>
           </div>
@@ -219,6 +225,31 @@ const Home = () => {
             <Button variant="professional" size="lg" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Back to Top</Button>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+          <div className="grid gap-6 md:grid-cols-2 text-sm text-muted-foreground">
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Are listings verified?</h3>
+              <p>We curate and periodically re-check active roles. Always confirm critical details on the official site before applying.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Do I need an account?</h3>
+              <p>No. You can search and apply directly without logging in. Accounts will arrive later for saved jobs & alerts.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">How often is data updated?</h3>
+              <p>Updates happen continuously as new roles are added. Expired postings are cleaned to keep results relevant.</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-2">Why is a job missing?</h3>
+              <p>It may have expired or been filled. Use the Contact page to suggest additions or corrections.</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
@@ -227,6 +258,7 @@ export default Home;
 
 // --- Job preview component (refactored to receive jobs externally) ---
 function JobPreview({ kind, jobs }: { kind: 'private'|'govt'; jobs: Job[] }) {
+  const navigate = useNavigate();
   const list = useMemo(() => jobs
     .filter(j => j.kind === kind)
     .sort((a, b) => b.postedAt.localeCompare(a.postedAt))
@@ -237,20 +269,25 @@ function JobPreview({ kind, jobs }: { kind: 'private'|'govt'; jobs: Job[] }) {
   return (
     <div className="grid gap-6 md:grid-cols-4">
       {list.map(j => (
-        <Card key={j.id} className="hover:shadow-[var(--shadow-elegant)] transition-all">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">{j.title}{j.featured && <Star className="h-4 w-4 text-warning" />}</CardTitle>
+        <Card
+          key={j.id}
+          className="group hover:shadow-[var(--shadow-elegant)] transition-all flex flex-col h-full"
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 group-hover:underline decoration-primary/40 underline-offset-2">{j.title}{j.featured && <Star className="h-4 w-4 text-warning" />}</CardTitle>
             <CardDescription>{j.org}</CardDescription>
           </CardHeader>
-            <CardContent className="text-xs text-muted-foreground space-y-3">
-            <p>{j.description.slice(0, 120)}{j.description.length > 120 ? '…' : ''}</p>
+          <CardContent className="text-xs text-muted-foreground flex flex-col flex-1 gap-3">
+            <p className="line-clamp-3 leading-relaxed min-h-[3.9rem]">{j.description}</p>
             <p>Posted {new Date(j.postedAt).toLocaleDateString()} {j.deadline && <>• Deadline {j.deadline}</>}</p>
-            <div className="pt-3">
+            <div className="flex-1" />
+            <div className="pt-1 grid grid-cols-2 gap-2">
+              <Button size="sm" variant="outline" onClick={()=> navigate(`/jobs/${j.id}`)}>Check Details</Button>
               <a href={j.applyUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" variant="professional" className="w-full">Apply</Button>
+                <Button size="sm" variant="professional" className="w-full">Apply Now</Button>
               </a>
             </div>
-            </CardContent>
+          </CardContent>
         </Card>
       ))}
     </div>

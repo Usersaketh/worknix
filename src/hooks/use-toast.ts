@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
+import type { ToastProps } from "@/components/ui/toast"
 import { ToastAction } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
@@ -157,7 +157,7 @@ function toast({ ...props }: Toast) {
     ...props,
     action: isMobile && props.variant === 'destructive'
       ? React.createElement(
-          ToastAction as any,
+          ToastAction as unknown as React.FC<{ altText: string; onClick: () => void }>,
           { altText: 'Dismiss', onClick: () => dispatch({ type: 'DISMISS_TOAST', toastId: id }) },
           'Dismiss'
         )

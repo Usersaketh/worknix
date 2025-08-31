@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Seo from '@/components/Seo';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,6 +81,7 @@ const AdminPortal = () => {
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Seo title="Admin" description="Admin management portal" noIndex />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
@@ -146,7 +148,7 @@ const AdminPortal = () => {
                   </div>
                   <div>
                     <Label htmlFor="pdfUrl">Job PDF URL</Label>
-                    <Input id="pdfUrl" value={(form as any).pdfUrl || ''} onChange={e=>setForm(f=>({...f, pdfUrl: e.target.value}))} placeholder="https://.../job.pdf" />
+                    <Input id="pdfUrl" value={form.pdfUrl || ''} onChange={e=>setForm(f=>({...f, pdfUrl: e.target.value}))} placeholder="https://.../job.pdf" />
                   </div>
                   <div>
                     <Label htmlFor="kind">Type</Label>
@@ -202,7 +204,7 @@ const AdminPortal = () => {
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
-                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">Apply</Button></a>
+                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">View Job Post</Button></a>
                         </div>
                       </div>
                     )}
@@ -224,6 +226,7 @@ const AdminPortal = () => {
                           <div>
                             <Label className="text-xs">Apply URL</Label>
                             <Input value={editForm.applyUrl} onChange={e=>setEditForm(f=>({...f,applyUrl:e.target.value}))} />
+                            {(()=>{ try { new URL(editForm.applyUrl); return null; } catch { return <span className="text-[10px] text-destructive">Invalid URL</span>; } })()}
                           </div>
                           <div>
                             <Label className="text-xs">Deadline</Label>
@@ -239,7 +242,7 @@ const AdminPortal = () => {
                           </div>
                           <div>
                             <Label className="text-xs">Job PDF URL</Label>
-                            <Input value={(editForm as any).pdfUrl || ''} onChange={e=>setEditForm(f=>({...f,pdfUrl:e.target.value}))} />
+                            <Input value={editForm.pdfUrl || ''} onChange={e=>setEditForm(f=>({...f,pdfUrl:e.target.value}))} />
                           </div>
                           <div>
                             <Label className="text-xs">Type</Label>
@@ -292,7 +295,7 @@ const AdminPortal = () => {
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
-                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">Apply</Button></a>
+                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">View Job Post</Button></a>
                         </div>
                       </div>
                     )}

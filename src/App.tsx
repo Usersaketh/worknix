@@ -1,9 +1,10 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Suspense, lazy, useEffect, useState } from "react";
+const LazyStandardToaster = lazy(()=> import('@/components/ui/toaster').then(m=>({default: m.Toaster})));
+const LazySonner = lazy(()=> import('@/components/ui/sonner').then(m=>({default: m.Toaster})));
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Suspense, lazy } from "react";
+import { useRef } from 'react';
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import { AdProvider } from "./components/ads/AdProvider";
@@ -16,16 +17,31 @@ const JobDetail = lazy(() => import("./pages/JobDetail"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const News = lazy(() => import("./pages/News"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  const [toastsReady, setToastsReady] = useState(false);
+  const armed = useRef(false);
+  useEffect(()=>{
+    const arm = () => { if(!armed.current){ armed.current = true; setToastsReady(true); cleanup(); } };
+    const cleanup = () => { window.removeEventListener('pointerdown', arm); window.removeEventListener('keydown', arm); };
+    window.addEventListener('pointerdown', arm, { passive: true });
+    window.addEventListener('keydown', arm);
+    return cleanup;
+  },[]);
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      {toastsReady && (
+        <Suspense fallback={null}>
+          <LazyStandardToaster />
+          <LazySonner />
+        </Suspense>
+      )}
       <BrowserRouter>
         <AdProvider />
         <ScrollToTop />
@@ -40,6 +56,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/news" element={<News />} />
               <Route path="/admin" element={<AdminGate><AdminPortal /></AdminGate>} />
               <Route path="*" element={<NotFound />} />
@@ -48,9 +65,9 @@ const App = () => (
         </main>
         <Footer />
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  </TooltipProvider>
+  </QueryClientProvider>);
+};
 
 // Gate admin by query key vs env
 const AdminGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Job } from '@/types/job';
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface JobCardProps {
   job: Job;
@@ -14,7 +15,8 @@ interface JobCardProps {
 
 import { Link } from 'react-router-dom';
 
-export function JobCard({ job, highlightFeatured = true, showBadges = true, showDeadlineStatus = true, clickableTitle = false }: JobCardProps) {
+function JobCardBase({ job, highlightFeatured = true, showBadges = true, showDeadlineStatus = true, clickableTitle = false }: JobCardProps) {
+  const navigate = useNavigate();
   const { isDeadlinePassed, isNew, deadlineLabel, status } = useMemo(() => {
     const now = new Date();
     const deadlineDate = job.deadline ? new Date(job.deadline + 'T23:59:59') : null; // end of day
@@ -36,9 +38,14 @@ export function JobCard({ job, highlightFeatured = true, showBadges = true, show
   return { isDeadlinePassed, isNew, deadlineLabel, status };
   }, [job.deadline, job.postedAt]);
 
+  const goPreview = () => navigate(`/jobs/${job.id}`);
   return (
-    <Card className={`hover:shadow-[var(--shadow-elegant)] transition-all flex flex-col ${highlightFeatured && job.featured ? 'border border-primary/50 bg-primary/5' : ''} ${isDeadlinePassed ? 'opacity-90' : ''}`}>
-      <CardHeader>
+  <Card className={`relative flex flex-col h-full border border-border hover:shadow-[var(--shadow-card)] transition-all ${isDeadlinePassed ? 'opacity-90' : ''}`}
+  >
+      {job.featured && highlightFeatured && (
+        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-[hsl(var(--primary))] rounded-t-md" />
+      )}
+      <CardHeader className="pt-4">
         <CardTitle className="text-lg flex flex-wrap items-center gap-2">
           {job.imageUrl ? (
             <img src={job.imageUrl} alt={job.org} className="h-8 w-8 rounded object-cover border" loading="lazy" />
@@ -48,7 +55,7 @@ export function JobCard({ job, highlightFeatured = true, showBadges = true, show
             </div>
           )}
           {clickableTitle ? (
-            <Link to={`/jobs/${job.id}`} className="hover:underline decoration-primary/50">
+            <Link to={`/jobs/${job.id}`} onClick={(e)=>e.stopPropagation()} className="hover:underline decoration-primary/50">
               {job.title}
             </Link>
           ) : job.title}
@@ -66,16 +73,39 @@ export function JobCard({ job, highlightFeatured = true, showBadges = true, show
           )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm text-muted-foreground flex-1 flex flex-col">
-        <p className="line-clamp-4 leading-relaxed">{job.description.slice(0, 220)}{job.description.length > 220 ? '…' : ''}</p>
-        <div className="flex flex-wrap gap-3 text-xs my-auto">
-          <span>Posted {new Date(job.postedAt).toLocaleDateString()}</span>
-          {job.deadline && <span className={isDeadlinePassed ? 'text-destructive' : ''}>Deadline {job.deadline}</span>}
+      <CardContent className="text-sm text-muted-foreground flex-1 flex flex-col gap-3 pb-5">
+  <p className="line-clamp-3 leading-relaxed min-h-[3.9rem]">{job.description}</p>{/* line-clamp via plugin */}
+        <div className="flex flex-wrap gap-3 text-xs">
+          <span>
+            {(() => {
+              const days = Math.round((Date.now() - new Date(job.postedAt).getTime())/(1000*60*60*24));
+              if (days <= 0) return 'Posted today';
+              return `Posted ${days}d ago`;
+            })()}
+          </span>
+          {job.deadline && <span className={isDeadlinePassed ? 'text-destructive' : ''}>{(() => {
+            const diff = Math.round((new Date(job.deadline+'T23:59:59').getTime()-Date.now())/(1000*60*60*24));
+            if (diff < 0) return 'Closed';
+            if (diff === 0) return 'Closes today';
+            return `Closes in ${diff}d`;
+          })()}</span>}
         </div>
-        <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
-          <Button size="sm" variant="professional" className="w-full">Apply</Button>
-        </a>
+        <div className="flex-1" />
+        <div className="grid grid-cols-2 gap-2">
+          <Button size="sm" variant="outline" onClick={goPreview}>Check Details</Button>
+          <a href={job.applyUrl} target="_blank" rel="noopener noreferrer" className="w-full">
+            <Button size="sm" variant="professional" className="w-full">Apply Now</Button>
+          </a>
+        </div>
       </CardContent>
     </Card>
   );
 }
+
+// Avoid re-renders unless vital job fields change
+export const JobCard = memo(JobCardBase, (prev, next) => {
+  const a = prev.job, b = next.job;
+  return a.id === b.id && a.title === b.title && a.postedAt === b.postedAt && a.deadline === b.deadline && a.featured === b.featured && a.applyUrl === b.applyUrl;
+});
+
+export default JobCard;

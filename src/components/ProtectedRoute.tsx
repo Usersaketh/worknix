@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from "react";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentUser } from "@/auth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,8 +13,16 @@ const ProtectedRoute = ({ children, isHost = false }: ProtectedRouteProps) => {
   // For now, we'll simulate host access with a simple check
   // You can replace this with actual authentication logic
   
+  // Simplified admin gate: allow when on localhost or when ?key= matches VITE_ADMIN_KEY env.
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  useEffect(()=> { (async () => { const u = await getCurrentUser(); setIsAdmin(u?.role === 'admin'); })(); }, []);
+  useEffect(()=> {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get('key');
+    const required = import.meta.env.VITE_ADMIN_KEY;
+    const hostOk = ['localhost','127.0.0.1',''].includes(window.location.hostname);
+    const ok = hostOk || (required && key === required);
+    setIsAdmin(ok);
+  }, []);
 
   if (isAdmin === null) {
     return <div className="p-8 text-center text-sm text-muted-foreground">Checking access…</div>;
