@@ -11,12 +11,11 @@ interface SeoProps {
 
 const DEFAULT_TITLE = 'Worknix – Curated Private & Government Jobs';
 const DEFAULT_DESC = 'Discover curated private & government job opportunities. Fast, free, no login needed.';
-const DEFAULT_IMAGE = 'https://lovable.dev/opengraph-image-p98pqg.png';
 
 export function Seo({ title, description, image, noIndex, canonical, articlePublishedTime }: SeoProps) {
   const fullTitle = title ? `${title} | Worknix` : DEFAULT_TITLE;
   const desc = description || DEFAULT_DESC;
-  const img = image || DEFAULT_IMAGE;
+  const img = image ;
   return (
     <Helmet>
       <title>{fullTitle}</title>
