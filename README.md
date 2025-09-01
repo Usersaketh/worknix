@@ -11,6 +11,7 @@ Lightweight, production‑ready frontend job portal with ATS‑friendly job deta
 - Modern stack: Vite + React 18 + TypeScript
 - UI system: Tailwind CSS + shadcn/ui (Radix primitives)
 - Jobs browsing: private & govt listings with client‑side filters, search, sort
+- Hero slideshow: lightweight auto‑sized multi‑image slider (see `HeroSlideshow`)
 - Job detail pages: structured data (JobPosting JSON‑LD), sanitized HTML description
 - Admin area: tabbed dashboard + lazy‑loaded charts (gated by simple key + localhost)
 - Notifications: optional Supabase table + realtime channel (graceful fallback / disable)
@@ -72,14 +73,32 @@ Notifications: if you do not have a `notifications` table, set `VITE_DISABLE_NOT
 
 ```
 src/
-	components/        # UI + shared widgets (Navigation, JobCard, Notifications, ads, etc.)
-	pages/             # Route components
+	assets/            # Static images (hero carousel images: `carousel_*.png`)
+	components/        # UI + shared widgets (Navigation, HeroSlideshow, JobCard, Notifications, ads, etc.)
+	pages/             # Route components (Home, Jobs, Govt, JobDetail, Admin, basic auth stubs)
 	data/              # Data access helpers (Supabase wrappers)
 	lib/               # Supabase client, utilities
 	hooks/             # Reusable React hooks
 	components/ui/     # shadcn generated primitives
 public/              # Static assets, manifest, service worker, sitemap
 scripts/             # build-time scripts (sitemap)
+
+The auth / resume related pages are currently lightweight placeholders; wire them up to real logic or remove if not needed.
+
+## Hero Slideshow
+
+`HeroSlideshow` is a minimal dependency‑free slider that:
+
+1. Accepts an `images` array (`{ src, alt }`).
+2. Auto advances every `intervalMs` (default 5–7s) with smooth horizontal slide.
+3. Auto‑sizes to the natural dimensions of the first image (maintains aspect ratio).
+4. Supports `fit="contain"` (no crop) or `fit="cover"`.
+
+Add / change hero images:
+
+1. Drop files into `src/assets` (e.g. `carousel_4.png`).
+2. Import them in `Home.tsx` and pass to the `images` prop.
+3. Keep alt text descriptive for accessibility + SEO.
 ```
 
 ## Admin Access Model
@@ -133,7 +152,7 @@ AdSense script only loads if `VITE_ADSENSE_CLIENT_ID` is set. Slots are rendered
 
 - Real authentication & role-based admin
 - Server-rendered / prerendered job pages
-- Richer resume builder (currently removed) & export formats (.docx)
+- Richer resume builder & export formats (.docx)
 - Form-based job submission pipeline with moderation
 - Enhanced analytics & A/B testing hooks
 
