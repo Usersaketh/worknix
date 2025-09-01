@@ -59,64 +59,64 @@ const Home = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/30">
   <Seo title="Home" description="Curated private & government job opportunities. Search and apply instantly." />
   {/* Hero Section */}
-      <section className="pt-20 pb-16 px-4 relative overflow-hidden">
+      <section className="pt-10 pb-16 px-4 relative overflow-hidden md:pt-20">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
-                Your Career Journey
-                <span className="block bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-                  Starts Here
-                </span>
-              </h1>
-              <p className="text-xl text-muted-foreground mb-6 max-w-2xl">
-                Curated private & government job opportunities in one place. No login required—search, discover & apply instantly.
-              </p>
-              {/* Search Input */}
-              <div className="max-w-xl mx-auto lg:mx-0 mb-8">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search jobs by title or organization..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 h-12 text-base"
-                  />
-                </div>
-                {search && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Showing results for <span className="font-medium">{search}</span> ({filtered.length} match{filtered.length!==1 && 'es'})
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <a href="#private-jobs">
-                  <Button size="lg" variant="professional" className="px-8 py-6 text-lg">
-                    <Briefcase className="mr-2 h-5 w-5" />
-                    Private Jobs
-                  </Button>
-                </a>
-                <a href="#govt-jobs">
-                  <Button size="lg" variant="outline" className="px-8 py-6 text-lg">
-                    <Building2 className="mr-2 h-5 w-5" />
-                    Govt Jobs
-                  </Button>
-                </a>
-              </div>
+        <div className="text-center lg:text-left ">
+          <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
+            Your Career Journey
+            <span className="block bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+          Starts Here
+            </span>
+          </h1>
+          <p className="text-xl text-muted-foreground mb-6 max-w-2xl">
+            Curated private & government job opportunities in one place. No login required—search, discover & apply instantly.
+          </p>
+          {/* Search Input */}
+          <div className="max-w-xl mx-auto lg:mx-0 mb-8">
+            <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search jobs by title or organization..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-12 text-base"
+          />
             </div>
-            <div className="relative hidden md:block">
-              <div className="rounded-2xl overflow-hidden shadow-[var(--shadow-elegant)] bg-gradient-to-r from-primary/10 to-primary-dark/10 p-2">
-                <img
-                  src={heroImage}
-                  alt="Professional ATS workspace with diverse team reviewing resumes and conducting interviews"
-                  className="w-full h-auto rounded-xl "
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-primary to-primary-dark rounded-full opacity-20 blur-xl"></div>
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-accent to-primary rounded-full opacity-20 blur-xl"></div>
-            </div>
+            {search && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing results for <span className="font-medium">{search}</span> ({filtered.length} match{filtered.length!==1 && 'es'})
+          </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <a href="#private-jobs">
+          <Button size="lg" variant="professional" className="px-8 py-6 text-lg">
+            <Briefcase className="mr-2 h-5 w-5" />
+            Private Jobs
+          </Button>
+            </a>
+            <a href="#govt-jobs">
+          <Button size="lg" variant="outline" className="px-8 py-6 text-lg">
+            <Building2 className="mr-2 h-5 w-5" />
+            Govt Jobs
+          </Button>
+            </a>
+          </div>
+        </div>
+        <div className="relative hidden md:block">
+          <div className="rounded-2xl overflow-hidden shadow-[var(--shadow-elegant)] bg-gradient-to-r from-primary/10 to-primary-dark/10 p-2">
+            <img
+          src={heroImage}
+          alt="Professional ATS workspace with diverse team reviewing resumes and conducting interviews"
+          className="w-full h-auto rounded-xl "
+          loading="eager"
+          decoding="async"
+            />
+          </div>
+          <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-primary to-primary-dark rounded-full opacity-20 blur-xl"></div>
+          <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-accent to-primary rounded-full opacity-20 blur-xl"></div>
+        </div>
           </div>
         </div>
       </section>
@@ -190,7 +190,7 @@ const Home = () => {
               </h2>
               <p className="text-muted-foreground max-w-xl">Latest hand-curated roles across engineering, product, design, marketing and more. We review postings for clarity and remove stale listings. Updated <span className="font-medium">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => window.location.hash = "private-jobs"}>View All</Button>
+            <Button className='hidden md:block' variant="outline" size="sm" onClick={() => window.location.hash = "private-jobs"}>View All</Button>
           </div>
           <JobPreview kind="private" jobs={filtered} />
           <div className="mt-8 text-center"><Link to="/jobs/private"><Button variant="outline">View All Private Jobs</Button></Link></div>
@@ -210,7 +210,7 @@ const Home = () => {
               <p className="text-muted-foreground max-w-xl">Highlighted open roles from select public sector departments & agencies. We strive for accuracy but always verify via the official notification. Updated <span className="font-medium">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>.</p>
               <p className="text-xs text-muted-foreground mt-2">Disclaimer: Government job details are summarized; refer to the official publication for authoritative information.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => window.location.hash = "govt-jobs"}>View All</Button>
+            <Button className='hidden md:block' variant="outline" size="sm" onClick={() => window.location.hash = "govt-jobs"}>View All</Button>
           </div>
           <JobPreview kind="govt" jobs={filtered} />
           <div className="mt-8 text-center"><Link to="/jobs/govt"><Button variant="outline">View All Govt Jobs</Button></Link></div>
@@ -230,7 +230,14 @@ const Home = () => {
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
-          <div className="grid gap-6 md:grid-cols-2 text-sm text-muted-foreground">
+          {/* Mobile accordion */}
+          <div className="md:hidden">
+            {/* Using shadcn accordion */}
+            {/** Keep content data-driven for maintainability */}
+            <MobileFaqAccordion />
+          </div>
+          {/* Desktop static grid */}
+          <div className="hidden md:grid gap-6 md:grid-cols-2 text-sm text-muted-foreground">
             <div>
               <h3 className="font-semibold text-foreground mb-2">Are listings verified?</h3>
               <p>We curate and periodically re-check active roles. Always confirm critical details on the official site before applying.</p>
@@ -291,5 +298,29 @@ function JobPreview({ kind, jobs }: { kind: 'private'|'govt'; jobs: Job[] }) {
         </Card>
       ))}
     </div>
+  );
+}
+
+// Mobile FAQ accordion component (isolated for clarity)
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
+function MobileFaqAccordion() {
+  const faqs: { q: string; a: string }[] = [
+    { q: 'Are listings verified?', a: 'We curate and periodically re-check active roles. Always confirm critical details on the official site before applying.' },
+    { q: 'Do I need an account?', a: 'No. You can search and apply directly without logging in. Accounts will arrive later for saved jobs & alerts.' },
+    { q: 'How often is data updated?', a: 'Updates happen continuously as new roles are added. Expired postings are cleaned to keep results relevant.' },
+    { q: 'Why is a job missing?', a: 'It may have expired or been filled. Use the Contact page to suggest additions or corrections.' },
+  ];
+  return (
+    <Accordion type="single" collapsible className="w-full border rounded-md divide-y">
+      {faqs.map((f, i) => (
+        <AccordionItem value={`faq-${i}`} key={f.q} className="border-none">
+          <AccordionTrigger className="text-sm text-left px-3 py-2 hover:no-underline">{f.q}</AccordionTrigger>
+          <AccordionContent className="text-xs px-3 pb-3 text-muted-foreground leading-relaxed">
+            {f.a}
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
   );
 }

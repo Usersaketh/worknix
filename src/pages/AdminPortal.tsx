@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import Seo from '@/components/Seo';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,6 +78,7 @@ const AdminPortal = () => {
   const privateJobs = jobs.filter(j => j.kind === 'private').sort((a,b) => b.postedAt.localeCompare(a.postedAt));
   const govtJobs = jobs.filter(j => j.kind === 'govt').sort((a,b) => b.postedAt.localeCompare(a.postedAt));
   const featured = jobs.filter(j => j.featured).slice(0,6);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
@@ -204,7 +206,7 @@ const AdminPortal = () => {
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
-                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">View Job Post</Button></a>
+                          <Button size="sm" variant="professional" onClick={()=>navigate(`/jobs/${j.id}`)}>Preview</Button>
                         </div>
                       </div>
                     )}
@@ -295,7 +297,7 @@ const AdminPortal = () => {
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
                           <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
-                          <a href={j.applyUrl} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="professional">View Job Post</Button></a>
+                          <Button size="sm" variant="professional" onClick={()=>navigate(`/jobs/${j.id}`)}>Preview</Button>
                         </div>
                       </div>
                     )}

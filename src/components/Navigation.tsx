@@ -66,7 +66,7 @@ const Navigation = () => {
       </div>
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden px-4 pb-4 space-y-2 border-t border-border">
+        <div className="md:hidden px-4 pt-4 pb-4 space-y-2 border-t border-border">
           {navItems.map(item => {
             const Icon = item.icon; const isActive = currentPath === item.path;
             return (
