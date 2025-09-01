@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { Briefcase, Building2, Star, Search } from "lucide-react";
-import heroImage from "@/assets/hero-ats.jpg";
+import img1 from "@/assets/carousel_1.png";
+import img2 from "@/assets/carousel_2.png";
+import img3 from "@/assets/carousel_3.png";
+import HeroSlideshow from '@/components/HeroSlideshow';
 import { AdSlot } from "@/components/ads/AdSlot";
 import { Job } from "@/types/job";
 import { JobCard } from '@/components/JobCard';
@@ -104,19 +107,19 @@ const Home = () => {
             </a>
           </div>
         </div>
-        <div className="relative hidden md:block">
-          <div className="rounded-2xl overflow-hidden shadow-[var(--shadow-elegant)] bg-gradient-to-r from-primary/10 to-primary-dark/10 p-2">
-            <img
-          src={heroImage}
-          alt="Professional ATS workspace with diverse team reviewing resumes and conducting interviews"
-          className="w-full h-auto rounded-xl "
-          loading="eager"
-          decoding="async"
-            />
+  <div className="relative hidden md:block pb-8">
+          <HeroSlideshow
+            images={[
+              { src: img1, alt: 'Find your Job' },
+              { src: img2, alt: 'Apply instantly' },
+              { src: img3, alt: 'Land your dream job' }
+            ]}
+            intervalMs={8000}
+            transitionMs={900}
+            fit="contain"
+            className="bg-background/40 rounded-2xl"
+          />
           </div>
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-primary to-primary-dark rounded-full opacity-20 blur-xl"></div>
-          <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-accent to-primary rounded-full opacity-20 blur-xl"></div>
-        </div>
           </div>
         </div>
       </section>

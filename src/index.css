@@ -135,4 +135,17 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+  @keyframes scroll-x {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .animate-infinite-scroll {
+    animation: scroll-x 40s linear infinite;
+  }
+  .animate-infinite-scroll.fast {
+    animation-duration: 25s;
+  }
+  .animation-paused:hover .animate-infinite-scroll {
+    animation-play-state: paused;
+  }
 }
