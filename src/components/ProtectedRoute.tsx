@@ -1,5 +1,4 @@
-import { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { ReactNode, useEffect, useState } from "react";
 import { Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,12 +13,21 @@ const ProtectedRoute = ({ children, isHost = false }: ProtectedRouteProps) => {
   // For now, we'll simulate host access with a simple check
   // You can replace this with actual authentication logic
   
-  // For demo purposes, let's check if the user is accessing from localhost or has admin privileges
-  const isLocalhost = window.location.hostname === 'localhost' || 
-                     window.location.hostname === '127.0.0.1' ||
-                     window.location.hostname === '';
-  
-  const hasAdminAccess = isHost && isLocalhost;
+  // Simplified admin gate: allow when on localhost or when ?key= matches VITE_ADMIN_KEY env.
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  useEffect(()=> {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get('key');
+    const required = import.meta.env.VITE_ADMIN_KEY;
+    const hostOk = ['localhost','127.0.0.1',''].includes(window.location.hostname);
+    const ok = hostOk || (required && key === required);
+    setIsAdmin(ok);
+  }, []);
+
+  if (isAdmin === null) {
+    return <div className="p-8 text-center text-sm text-muted-foreground">Checking access…</div>;
+  }
+  const hasAdminAccess = isHost ? isAdmin : true;
 
   if (!hasAdminAccess) {
     return (
@@ -42,7 +50,7 @@ const ProtectedRoute = ({ children, isHost = false }: ProtectedRouteProps) => {
               </p>
               <div className="flex items-center justify-center gap-2 text-sm">
                 <Shield className="h-4 w-4" />
-                <span>Admin access required</span>
+                <span>Admin access required (provide ?key= or use localhost)</span>
               </div>
             </div>
             <div className="flex gap-2">

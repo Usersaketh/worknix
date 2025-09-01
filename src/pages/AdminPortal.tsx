@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
+import Seo from '@/components/Seo';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,169 +8,82 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { 
-  Users, 
-  Briefcase, 
-  FileText, 
-  TrendingUp, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye,
-  Shield,
-  Settings,
-  Building2
-} from "lucide-react";
+import { Trash2, Shield } from "lucide-react";
+import { Job } from '@/types/job';
+import { getJobs, addJob, deleteJob, toggleFeatured, updateJob, cleanupExpiredJobs } from '@/data/jobs';
+import { toast } from '@/hooks/use-toast';
 
 const AdminPortal = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem("worknix_admin_tab") || "dashboard");
+  useEffect(() => {
+    localStorage.setItem("worknix_admin_tab", activeTab);
+  }, [activeTab]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [opLoading, setOpLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
 
-  // Sample data for charts
-  const applicationData = [
-    { month: 'Jan', applications: 120 },
-    { month: 'Feb', applications: 190 },
-    { month: 'Mar', applications: 150 },
-    { month: 'Apr', applications: 220 },
-    { month: 'May', applications: 280 },
-    { month: 'Jun', applications: 310 }
-  ];
-
-  const statusData = [
-    { name: 'Applied', value: 45, color: '#3b82f6' },
-    { name: 'Reviewing', value: 25, color: '#f59e0b' },
-    { name: 'Interview', value: 20, color: '#10b981' },
-    { name: 'Rejected', value: 10, color: '#ef4444' }
-  ];
-
-  const jobs = [
-    {
-      id: 1,
-      title: "Senior Frontend Developer",
-      company: "TechCorp Inc.",
-      status: "Active",
-      applications: 45,
-      posted: "2024-01-15",
-      type: "Full-time"
-    },
-    {
-      id: 2,
-      title: "UX/UI Designer",
-      company: "Design Studio",
-      status: "Active",
-      applications: 32,
-      posted: "2024-01-10",
-      type: "Full-time"
-    },
-    {
-      id: 3,
-      title: "Product Manager",
-      company: "StartupXYZ",
-      status: "Paused",
-      applications: 28,
-      posted: "2024-01-08",
-      type: "Remote"
-    }
-  ];
-
-  const candidates = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      email: "sarah.johnson@email.com",
-      position: "Senior Frontend Developer",
-      status: "Interview",
-      score: 95,
-      applied: "2024-01-20"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      email: "michael.chen@email.com",
-      position: "UX/UI Designer",
-      status: "Reviewing",
-      score: 88,
-      applied: "2024-01-18"
-    },
-    {
-      id: 3,
-      name: "Emily Davis",
-      email: "emily.davis@email.com",
-      position: "Product Manager",
-      status: "Applied",
-      score: 82,
-      applied: "2024-01-16"
-    }
-  ];
-
-  const govtJobs = [
-    {
-      id: 1,
-      title: "Software Engineer",
-      department: "Department of Defense",
-      status: "Active",
-      applications: 67,
-      posted: "2024-01-15",
-      clearance: "Secret",
-      location: "Washington, DC"
-    },
-    {
-      id: 2,
-      title: "Data Analyst",
-      department: "Department of Health & Human Services",
-      status: "Active",
-      applications: 45,
-      posted: "2024-01-12",
-      clearance: "Public Trust",
-      location: "Bethesda, MD"
-    },
-    {
-      id: 3,
-      title: "Cybersecurity Specialist",
-      department: "Department of Homeland Security",
-      status: "Paused",
-      applications: 89,
-      posted: "2024-01-10",
-      clearance: "Top Secret",
-      location: "Remote"
-    },
-    {
-      id: 4,
-      title: "Policy Analyst",
-      department: "Department of Education",
-      status: "Active",
-      applications: 34,
-      posted: "2024-01-08",
-      clearance: "Public Trust",
-      location: "Washington, DC"
-    }
-  ];
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'Active': return 'default';
-      case 'Paused': return 'secondary';
-      case 'Interview': return 'default';
-      case 'Reviewing': return 'secondary';
-      case 'Applied': return 'outline';
-      default: return 'outline';
-    }
+  const refresh = async () => {
+    setLoading(true); setJobsError(null);
+  try { const data = await getJobs(); setJobs(data); } catch (e: unknown) { const msg = (e as { message?: string })?.message || 'Failed to load jobs'; setJobsError(msg); }
+    finally { setLoading(false); }
   };
+  useEffect(()=> { refresh(); }, []);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Omit<Job,'postedAt'|'id'>>({ title:'', org:'', location:'', kind:'private', description:'', applyUrl:'', deadline:'', featured:false, imageUrl:'', salary:'', pdfUrl:'' });
+
+  // Form state
+  const empty: Omit<Job,'id'|'postedAt'> = { title: '', org: '', location:'', kind: 'private', description: '', applyUrl: '', deadline: '', featured: false, imageUrl:'', salary:'', pdfUrl:'' };
+  const [form, setForm] = useState<Omit<Job,'id'|'postedAt'>>(empty);
+  const [error, setError] = useState<string | null>(null);
+  const validate = (data: {title:string; org:string; applyUrl:string; deadline?: string; imageUrl?: string; salary?: string}) => {
+    if (!data.title.trim()) return 'Title required';
+    if (!data.org.trim()) return 'Organization required';
+    try { new URL(data.applyUrl); } catch { return 'Apply URL invalid'; }
+    if (data.deadline) {
+      const d = new Date(data.deadline + 'T00:00:00');
+      const today = new Date(); today.setHours(0,0,0,0);
+      if (d < today) return 'Deadline must be today or future';
+    }
+    return null;
+  };
+  const addJobHandler = async () => {
+    const v = validate(form);
+    if (v) return setError(v);
+    setOpLoading(true);
+  try { const created = await addJob(form); await refresh(); toast({ title: 'Job created', description: created.title }); } catch(e: unknown){ const msg = (e as { message?: string })?.message || 'Create failed'; setError(msg); toast({ title: 'Create failed', description: msg, variant: 'destructive' }); }
+    setOpLoading(false);
+    setForm(empty);
+    setError(null);
+  };
+  const startEdit = (job: Job) => {
+    setEditingId(job.id);
+  setEditForm({ title: job.title, org: job.org, location: job.location, kind: job.kind, description: job.description, applyUrl: job.applyUrl, deadline: job.deadline || '', featured: job.featured || false, imageUrl: job.imageUrl || '', salary: job.salary || '', pdfUrl: job.pdfUrl || '' });
+  };
+  const cancelEdit = () => { setEditingId(null); };
+  const saveEdit = async (id: string) => {
+    const v = validate(editForm);
+    if (v) { setError(v); return; }
+    const original = jobs.find(j => j.id === id);
+    if (!original) return;
+    setOpLoading(true);
+  try { const updated = await updateJob(id, { ...editForm, deadline: editForm.deadline || undefined }); await refresh(); toast({ title: 'Job updated', description: updated.title }); } catch(e: unknown){ const msg = (e as { message?: string })?.message || 'Update failed'; setError(msg); toast({ title: 'Update failed', description: msg, variant: 'destructive' }); }
+    setOpLoading(false);
+    setEditingId(null);
+    setError(null);
+  };
+  const removeJob = async (id: string) => { setOpLoading(true); try { await deleteJob(id); await refresh(); toast({ title: 'Job deleted', description: id }); } catch(e: unknown){ const msg = (e as { message?: string })?.message || 'Delete failed'; setError(msg); toast({ title: 'Delete failed', description: msg, variant: 'destructive' }); } setOpLoading(false); };
+  const handleToggleFeatured = async (id: string) => { setOpLoading(true); try { const res = await toggleFeatured(id); await refresh(); toast({ title: res?.featured? 'Featured enabled':'Featured removed', description: res?.title }); } catch(e: unknown){ const msg = (e as { message?: string })?.message || 'Toggle failed'; setError(msg); toast({ title: 'Toggle failed', description: msg, variant: 'destructive' }); } setOpLoading(false); };
+
+  const privateJobs = jobs.filter(j => j.kind === 'private').sort((a,b) => b.postedAt.localeCompare(a.postedAt));
+  const govtJobs = jobs.filter(j => j.kind === 'govt').sort((a,b) => b.postedAt.localeCompare(a.postedAt));
+  const featured = jobs.filter(j => j.featured).slice(0,6);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-secondary/20 pt-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Seo title="Admin" description="Admin management portal" noIndex />
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
@@ -185,392 +100,255 @@ const AdminPortal = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="jobs">Jobs</TabsTrigger>
-            <TabsTrigger value="govt-jobs">Govt Jobs</TabsTrigger>
-            <TabsTrigger value="candidates">Candidates</TabsTrigger>
-            <TabsTrigger value="resumes">Resumes</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="private">Private Jobs</TabsTrigger>
+            <TabsTrigger value="govt">Govt Jobs</TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm">Total Jobs</p>
-                      <p className="text-3xl font-bold text-foreground">156</p>
-                      <p className="text-success text-sm">+12% from last month</p>
-                    </div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Briefcase className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm">Govt Jobs</p>
-                      <p className="text-3xl font-bold text-foreground">24</p>
-                      <p className="text-success text-sm">+8% from last month</p>
-                    </div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Building2 className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm">Total Applications</p>
-                      <p className="text-3xl font-bold text-foreground">2,547</p>
-                      <p className="text-success text-sm">+18% from last month</p>
-                    </div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <Users className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm">Resumes Created</p>
-                      <p className="text-3xl font-bold text-foreground">892</p>
-                      <p className="text-success text-sm">+25% from last month</p>
-                    </div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <FileText className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-muted-foreground text-sm">Success Rate</p>
-                      <p className="text-3xl font-bold text-foreground">85%</p>
-                      <p className="text-success text-sm">+3% from last month</p>
-                    </div>
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <TrendingUp className="h-6 w-6 text-primary" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="shadow-[var(--shadow-card)]"><CardContent className="p-6"><p className="text-muted-foreground text-sm">Total Jobs</p><p className="text-3xl font-bold">{jobs.length}</p></CardContent></Card>
+              <Card className="shadow-[var(--shadow-card)]"><CardContent className="p-6"><p className="text-muted-foreground text-sm">Featured</p><p className="text-3xl font-bold">{featured.length}</p></CardContent></Card>
+              <Card className="shadow-[var(--shadow-card)]"><CardContent className="p-6"><p className="text-muted-foreground text-sm">Govt Jobs</p><p className="text-3xl font-bold">{govtJobs.length}</p></CardContent></Card>
             </div>
-
-            {/* Charts */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>Application Trends</CardTitle>
-                  <CardDescription>Monthly application statistics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={applicationData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="applications" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>Application Status</CardTitle>
-                  <CardDescription>Current status distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-4">
-                    {statusData.map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-sm">{item.name}</span>
-                      </div>
-                    ))}
+            <Card className="shadow-[var(--shadow-card)] max-w-2xl">
+              <CardHeader>
+                <CardTitle>Post Job</CardTitle>
+                <CardDescription>Create a new job entry</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Title</Label>
+                    <Input id="title" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} />
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <div>
+                    <Label htmlFor="org">Company / Dept</Label>
+                    <Input id="org" value={form.org} onChange={e=>setForm(f=>({...f,org:e.target.value}))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Input id="location" value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="Remote / City" />
+                  </div>
+                  <div>
+                    <Label htmlFor="apply">Apply URL</Label>
+                    <Input id="apply" value={form.applyUrl} onChange={e=>setForm(f=>({...f,applyUrl:e.target.value}))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="deadline">Deadline</Label>
+                    <Input id="deadline" type="date" value={form.deadline} onChange={e=>setForm(f=>({...f,deadline:e.target.value}))} />
+                  </div>
+                  <div>
+                    <Label htmlFor="imageUrl">Logo / Image URL</Label>
+                    <Input id="imageUrl" value={form.imageUrl} onChange={e=>setForm(f=>({...f,imageUrl:e.target.value}))} placeholder="https://..." />
+                  </div>
+                  <div>
+                    <Label htmlFor="salary">Salary / Package</Label>
+                    <Input id="salary" value={form.salary} onChange={e=>setForm(f=>({...f,salary:e.target.value}))} placeholder="$100k - $120k" />
+                  </div>
+                  <div>
+                    <Label htmlFor="pdfUrl">Job PDF URL</Label>
+                    <Input id="pdfUrl" value={form.pdfUrl || ''} onChange={e=>setForm(f=>({...f, pdfUrl: e.target.value}))} placeholder="https://.../job.pdf" />
+                  </div>
+                  <div>
+                    <Label htmlFor="kind">Type</Label>
+                    <select id="kind" value={form.kind} onChange={e=>setForm(f=>({...f,kind:e.target.value as 'private'|'govt'}))} className="border border-border rounded-md px-3 py-2 w-full text-sm bg-background">
+                      <option value="private">Private</option>
+                      <option value="govt">Govt</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input id="featured" type="checkbox" checked={form.featured} onChange={e=>setForm(f=>({...f,featured:e.target.checked}))} />
+                    <Label htmlFor="featured">Featured</Label>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="desc">Description</Label>
+                  <Textarea id="desc" rows={4} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} />
+                </div>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                <div className="text-right"><Button variant="professional" disabled={opLoading} onClick={addJobHandler}>{opLoading? 'Working...' : 'Create'}</Button></div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-[var(--shadow-card)] max-w-2xl">
+              <CardHeader>
+                <CardTitle>Maintenance</CardTitle>
+                <CardDescription>Housekeeping utilities</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" size="sm" disabled={opLoading} onClick={async ()=>{ setOpLoading(true); try { const removed = await cleanupExpiredJobs(); await refresh(); toast({ title: 'Cleanup complete', description: removed ? `${removed} expired deleted` : 'No expired jobs' }); } catch(e:unknown){ const msg=(e as {message?:string})?.message||'Cleanup failed'; toast({ title:'Cleanup failed', description: msg, variant:'destructive'});} finally { setOpLoading(false);} }}>Run Expired Cleanup</Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Jobs Management Tab */}
-          <TabsContent value="jobs" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Job Management</h2>
-              <Button variant="professional">
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Job
-              </Button>
-            </div>
-
-            <Card className="shadow-[var(--shadow-card)]">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {jobs.map((job) => (
-                    <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{job.title}</h3>
-                        <p className="text-muted-foreground">{job.company}</p>
-                        <div className="flex items-center gap-4 mt-2">
-                          <Badge variant={getStatusBadgeVariant(job.status)}>
-                            {job.status}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {job.applications} applications
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            Posted: {job.posted}
-                          </span>
+          <TabsContent value="private" className="space-y-6">
+            <h2 className="text-2xl font-bold">Private Jobs ({privateJobs.length})</h2>
+            <Card className="shadow-[var(--shadow-card)]"><CardContent className="p-6 space-y-4">
+              {privateJobs.length === 0 && <p className="text-muted-foreground">No private jobs posted.</p>}
+              {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
+              {jobsError && <p className="text-destructive text-sm">{jobsError}</p>}
+              {!loading && privateJobs.map(j => {
+                const editing = editingId === j.id;
+                return (
+                  <div key={j.id} className="p-4 border rounded-lg flex flex-col gap-4">
+                    {!editing && (
+                      <div className="flex justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold">{j.title}</h3>
+                          <p className="text-sm text-muted-foreground">{j.org}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Posted {new Date(j.postedAt).toLocaleDateString()} {j.deadline && <>• Deadline {j.deadline}</>}</p>
+                          {j.featured && <Badge className="mt-2" variant="secondary">Featured</Badge>}
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[160px]">
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="professional" onClick={()=>navigate(`/jobs/${j.id}`)}>Preview</Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                    )}
+                    {editing && (
+                      <div className="space-y-3">
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Title</Label>
+                            <Input value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Org</Label>
+                            <Input value={editForm.org} onChange={e=>setEditForm(f=>({...f,org:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Location</Label>
+                            <Input value={editForm.location} onChange={e=>setEditForm(f=>({...f,location:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Apply URL</Label>
+                            <Input value={editForm.applyUrl} onChange={e=>setEditForm(f=>({...f,applyUrl:e.target.value}))} />
+                            {(()=>{ try { new URL(editForm.applyUrl); return null; } catch { return <span className="text-[10px] text-destructive">Invalid URL</span>; } })()}
+                          </div>
+                          <div>
+                            <Label className="text-xs">Deadline</Label>
+                            <Input type="date" value={editForm.deadline} onChange={e=>setEditForm(f=>({...f,deadline:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Logo / Image URL</Label>
+                            <Input value={editForm.imageUrl} onChange={e=>setEditForm(f=>({...f,imageUrl:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Salary</Label>
+                            <Input value={editForm.salary} onChange={e=>setEditForm(f=>({...f,salary:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Job PDF URL</Label>
+                            <Input value={editForm.pdfUrl || ''} onChange={e=>setEditForm(f=>({...f,pdfUrl:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Type</Label>
+                            <select value={editForm.kind} onChange={e=>setEditForm(f=>({...f,kind:e.target.value as 'private'|'govt'}))} className="border border-border rounded-md px-3 py-2 w-full text-sm bg-background">
+                              <option value="private">Private</option>
+                              <option value="govt">Govt</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2 pt-6">
+                            <input id={`featured-${j.id}`} type="checkbox" checked={editForm.featured} onChange={e=>setEditForm(f=>({...f,featured:e.target.checked}))} />
+                            <Label htmlFor={`featured-${j.id}`}>Featured</Label>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Description</Label>
+                          <Textarea rows={3} value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={cancelEdit}>Cancel</Button>
+                          <Button size="sm" variant="professional" disabled={opLoading} onClick={()=>saveEdit(j.id)}>{opLoading? 'Saving...' : 'Save'}</Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent></Card>
           </TabsContent>
 
           {/* Govt Jobs Management Tab */}
-          <TabsContent value="govt-jobs" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Government Job Management</h2>
-              <Button variant="professional">
-                <Plus className="h-4 w-4 mr-2" />
-                Post New Govt Job
-              </Button>
-            </div>
-
-            <Card className="shadow-[var(--shadow-card)]">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {govtJobs.map((job) => (
-                    <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{job.title}</h3>
-                        <p className="text-muted-foreground">{job.department}</p>
-                        <div className="flex items-center gap-4 mt-2">
-                          <Badge variant={getStatusBadgeVariant(job.status)}>
-                            {job.status}
-                          </Badge>
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <Shield className="h-3 w-3" />
-                            {job.clearance}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {job.applications} applications
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {job.location}
-                          </span>
+          <TabsContent value="govt" className="space-y-6">
+            <h2 className="text-2xl font-bold">Government Jobs ({govtJobs.length})</h2>
+            <Card className="shadow-[var(--shadow-card)]"><CardContent className="p-6 space-y-4">
+              {govtJobs.length === 0 && <p className="text-muted-foreground">No government jobs posted.</p>}
+              {loading && <p className="text-muted-foreground text-sm">Loading…</p>}
+              {jobsError && <p className="text-destructive text-sm">{jobsError}</p>}
+              {!loading && govtJobs.map(j => {
+                const editing = editingId === j.id;
+                return (
+                  <div key={j.id} className="p-4 border rounded-lg flex flex-col gap-4">
+                    {!editing && (
+                      <div className="flex justify-between gap-4">
+                        <div>
+                          <h3 className="font-semibold">{j.title}</h3>
+                          <p className="text-sm text-muted-foreground">{j.org}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Posted {new Date(j.postedAt).toLocaleDateString()} {j.deadline && <>• Deadline {j.deadline}</>}</p>
+                          {j.featured && <Badge className="mt-2" variant="secondary">Featured</Badge>}
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[160px]">
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>handleToggleFeatured(j.id)}>{j.featured?'Unfeature':'Feature'}</Button>
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>startEdit(j)}>Edit</Button>
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={()=>removeJob(j.id)}><Trash2 className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="professional" onClick={()=>navigate(`/jobs/${j.id}`)}>Preview</Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Candidates Tab */}
-          <TabsContent value="candidates" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Candidate Management</h2>
-              <div className="flex gap-2">
-                <Input placeholder="Search candidates..." className="w-64" />
-                <Button variant="outline">Filter</Button>
-              </div>
-            </div>
-
-            <Card className="shadow-[var(--shadow-card)]">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {candidates.map((candidate) => (
-                    <div key={candidate.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{candidate.name}</h3>
-                        <p className="text-muted-foreground">{candidate.email}</p>
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="text-sm text-muted-foreground">
-                            Applied for: {candidate.position}
-                          </span>
-                          <Badge variant={getStatusBadgeVariant(candidate.status)}>
-                            {candidate.status}
-                          </Badge>
-                          <span className="text-sm text-success font-semibold">
-                            Score: {candidate.score}%
-                          </span>
+                    )}
+                    {editing && (
+                      <div className="space-y-3">
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Title</Label>
+                            <Input value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Org</Label>
+                            <Input value={editForm.org} onChange={e=>setEditForm(f=>({...f,org:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Apply URL</Label>
+                            <Input value={editForm.applyUrl} onChange={e=>setEditForm(f=>({...f,applyUrl:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Deadline</Label>
+                            <Input type="date" value={editForm.deadline} onChange={e=>setEditForm(f=>({...f,deadline:e.target.value}))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Type</Label>
+                            <select value={editForm.kind} onChange={e=>setEditForm(f=>({...f,kind:e.target.value as 'private'|'govt'}))} className="border border-border rounded-md px-3 py-2 w-full text-sm bg-background">
+                              <option value="private">Private</option>
+                              <option value="govt">Govt</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2 pt-6">
+                            <input id={`featured-${j.id}`} type="checkbox" checked={editForm.featured} onChange={e=>setEditForm(f=>({...f,featured:e.target.checked}))} />
+                            <Label htmlFor={`featured-${j.id}`}>Featured</Label>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Description</Label>
+                          <Textarea rows={3} value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} />
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" size="sm" disabled={opLoading} onClick={cancelEdit}>Cancel</Button>
+                          <Button size="sm" variant="professional" disabled={opLoading} onClick={()=>saveEdit(j.id)}>{opLoading? 'Saving...' : 'Save'}</Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="professional" size="sm">
-                          Contact
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent></Card>
           </TabsContent>
 
-          {/* Resumes Tab */}
-          <TabsContent value="resumes" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Resume Analytics</h2>
-              <Button variant="outline">Export Data</Button>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6 text-center">
-                  <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold">892</h3>
-                  <p className="text-muted-foreground">Total Resumes</p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6 text-center">
-                  <TrendingUp className="h-12 w-12 text-success mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold">156</h3>
-                  <p className="text-muted-foreground">This Month</p>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardContent className="p-6 text-center">
-                  <Users className="h-12 w-12 text-warning mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold">4.8</h3>
-                  <p className="text-muted-foreground">Avg. Rating</p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <h2 className="text-2xl font-bold">System Settings</h2>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>General Settings</CardTitle>
-                  <CardDescription>Configure system-wide settings</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="site-name">Site Name</Label>
-                    <Input id="site-name" value="Worknix" />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-email">Contact Email</Label>
-                    <Input id="contact-email" value="admin@worknix.com" />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Site Description</Label>
-                    <Textarea id="description" rows={3} value="Professional job platform for job seekers and employers" />
-                  </div>
-                  <Button variant="professional">Save Changes</Button>
-                </CardContent>
-              </Card>
-
-              <Card className="shadow-[var(--shadow-card)]">
-                <CardHeader>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage user permissions and roles</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Admin Users</p>
-                      <p className="text-sm text-muted-foreground">5 active admins</p>
-                    </div>
-                    <Button variant="outline" size="sm">Manage</Button>
-                  </div>
-                  <div className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Job Posters</p>
-                      <p className="text-sm text-muted-foreground">234 company accounts</p>
-                    </div>
-                    <Button variant="outline" size="sm">Manage</Button>
-                  </div>
-                  <div className="flex justify-between items-center p-3 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Job Seekers</p>
-                      <p className="text-sm text-muted-foreground">1,245 active users</p>
-                    </div>
-                    <Button variant="outline" size="sm">Manage</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+        
         </Tabs>
       </div>
     </div>
